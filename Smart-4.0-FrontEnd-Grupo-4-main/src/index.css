@@ -1,1 +1,30 @@
-*{box-sizing:border-box}html{min-width:360px;min-height:100%;background:#080d16}body{margin:0;min-width:360px;min-height:100vh}button,select{font:inherit}button:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #69aaff;outline-offset:3px}::selection{background:#28558a;color:#fff}
+* {
+  box-sizing: border-box;
+}
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: #0b111b;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+button,
+select,
+input {
+  font: inherit;
+}
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid #85c1ff;
+  outline-offset: 3px;
+}
+::selection {
+  background: #28558a;
+  color: #fff;
+}

@@ -1,72 +1,96 @@
-import type { TelemetriaSmart40 } from '../types/smart40'
+import type { TelemetriaSmart40 } from "../types/smart40";
 
-const historicoBase = [
-  { horario: '08h', aprovadas: 24, rejeitadas: 2 },
-  { horario: '09h', aprovadas: 31, rejeitadas: 1 },
-  { horario: '10h', aprovadas: 28, rejeitadas: 3 },
-  { horario: '11h', aprovadas: 36, rejeitadas: 2 },
-  { horario: '12h', aprovadas: 19, rejeitadas: 1 },
-  { horario: '13h', aprovadas: 34, rejeitadas: 2 },
-]
+export const scenarioDescriptions: Record<string, string> = {
+  "Operação normal":
+    "Produção estável, baixo refugo e espaço disponível no palete.",
+  "OEE baixo": "Perdas de disponibilidade e performance reduzem a eficiência.",
+  "Refugo elevado": "Uma em cada quatro novas peças é rejeitada neste cenário.",
+  "Fila cheia": "Palete completo. Simule a liberação para escoar a fila.",
+  "Produção parada": "Linha em manutenção: os contadores permanecem estáveis.",
+  "Início de turno":
+    "Sem produção ainda. Indicadores sem amostra aparecem como indisponíveis.",
+};
 
-const ordensBase = [
-  { codigo: 'OP-001', produto: 'Carcaça A', meta: 500, produzido: 320, status: 'ATIVA' as const },
-  { codigo: 'OP-002', produto: 'Eixo B', meta: 300, produzido: 0, status: 'AGUARDANDO' as const },
-  { codigo: 'OP-003', produto: 'Suporte C', meta: 200, produzido: 200, status: 'FINALIZADA' as const },
-]
-
-function criarCenario(overrides: Partial<TelemetriaSmart40> = {}): TelemetriaSmart40 {
+function criarCenario(name: string): TelemetriaSmart40 {
+  const empty = name === "Início de turno";
+  const rejected = name === "Refugo elevado" ? 32 : 4;
+  const total = empty ? 0 : 142;
+  const approved = empty ? 0 : total - rejected;
+  const availability =
+    name === "Produção parada" ? 0 : name === "OEE baixo" ? 62 : 95;
+  const performance = name === "OEE baixo" ? 76 : 96;
+  const quality = total ? (approved / total) * 100 : 0;
+  const now = new Date().toISOString();
   return {
-    timestamp: new Date().toISOString(),
-    estadoGlobal: 'EM_EXECUCAO',
-    modoOperacao: 'AUTOMATICO',
-    velocidadeEsteiraAtual: 65,
+    timestamp: now,
+    estadoGlobal: name === "Produção parada" ? "PRONTA" : "EM_EXECUCAO",
+    modoOperacao: name === "Produção parada" ? "MANUTENCAO" : "AUTOMATICO",
+    velocidadeEsteiraAtual: name === "Produção parada" ? 0 : 65,
     ultimaPecaLida: {
-      idPeca: 'PECA-142',
-      codigoLote: 'LOTE-2026-A9',
-      timestampLeitura: new Date().toISOString(),
+      idPeca: empty ? "—" : "PECA-142",
+      codigoLote: "LOTE-2026-A9",
+      timestampLeitura: now,
       qualidadeSuperficie: 98.5,
-      statusInspecao: 'APROVADA',
+      statusInspecao: "APROVADA",
     },
     metricasExpedicao: {
-      pecasProcessadasTotal: 142,
-      pecasAprovadasCount: 138,
-      pecasRejeitadasCount: 4,
-      tamanhoFilaSaida: 3,
-      ritmoProducaoPecasPorMinuto: 12.4,
-      oeePercentual: 88.5,
-      disponibilidadePercentual: 99,
-      performancePercentual: 92,
-      qualidadePercentual: 97,
-      historico: historicoBase,
+      pecasProcessadasTotal: total,
+      pecasAprovadasCount: approved,
+      pecasRejeitadasCount: empty ? 0 : rejected,
+      tamanhoFilaSaida: name === "Fila cheia" ? 25 : 0,
+      ritmoProducaoPecasPorMinuto: name === "Produção parada" ? 0 : 12,
+      disponibilidadePercentual: availability,
+      performancePercentual: performance,
+      qualidadePercentual: quality,
+      oeePercentual: (availability * performance * quality) / 10000,
+      historico: [21, 24, 23, 26, 22, 26].map((count, i) => {
+        const bad = empty
+          ? 0
+          : name === "Refugo elevado"
+            ? [4, 6, 5, 6, 5, 6][i]
+            : [0, 1, 0, 1, 1, 1][i];
+        return {
+          horario: `${8 + i}h`,
+          aprovadas: empty ? 0 : count - bad,
+          rejeitadas: bad,
+        };
+      }),
     },
     dadosExpedicao: {
-      ordens: ordensBase,
-      palete: { codigo: 'PAL-023', pecas: 37, capacidade: 50, destino: 'Centro de Distribuição SP' },
+      ordens: [
+        {
+          codigo: "OP-001",
+          produto: "Carcaça A · lote A9",
+          meta: 160,
+          produzido: empty ? 0 : approved - 40,
+          status: "ATIVA",
+        },
+        {
+          codigo: "OP-002",
+          produto: "Eixo B · lote B2",
+          meta: 120,
+          produzido: 0,
+          status: "AGUARDANDO",
+        },
+        {
+          codigo: "OP-003",
+          produto: "Suporte C · lote C4",
+          meta: 40,
+          produzido: empty ? 0 : 40,
+          status: empty ? "AGUARDANDO" : "FINALIZADA",
+        },
+      ],
+      palete: {
+        codigo: "PAL-023",
+        pecas: empty ? 0 : name === "Fila cheia" ? 50 : 37,
+        capacidade: 50,
+        destino: "Centro de Distribuição SP",
+      },
     },
-    ...overrides,
-  }
+  };
 }
 
-export const telemetryMock = criarCenario()
-
-export const telemetryScenarios: Record<string, TelemetriaSmart40> = {
-  'OEE alto': criarCenario({
-    metricasExpedicao: { ...telemetryMock.metricasExpedicao, oeePercentual: 96, disponibilidadePercentual: 99, performancePercentual: 98, qualidadePercentual: 99 },
-  }),
-  'OEE baixo': criarCenario({
-    metricasExpedicao: { ...telemetryMock.metricasExpedicao, oeePercentual: 42, disponibilidadePercentual: 62, performancePercentual: 76, qualidadePercentual: 89 },
-  }),
-  'Muitas rejeitadas': criarCenario({
-    metricasExpedicao: { ...telemetryMock.metricasExpedicao, pecasProcessadasTotal: 142, pecasAprovadasCount: 110, pecasRejeitadasCount: 32, qualidadePercentual: 77 },
-    ultimaPecaLida: { ...telemetryMock.ultimaPecaLida, statusInspecao: 'REJEITADA', qualidadeSuperficie: 71 },
-  }),
-  'Fila cheia': criarCenario({
-    metricasExpedicao: { ...telemetryMock.metricasExpedicao, tamanhoFilaSaida: 25 },
-    dadosExpedicao: { ...telemetryMock.dadosExpedicao, palete: { ...telemetryMock.dadosExpedicao.palete, pecas: 50 } },
-  }),
-  'Produção parada': criarCenario({
-    estadoGlobal: 'PRONTA', modoOperacao: 'MANUTENCAO', velocidadeEsteiraAtual: 0,
-    metricasExpedicao: { ...telemetryMock.metricasExpedicao, ritmoProducaoPecasPorMinuto: 0, disponibilidadePercentual: 0, oeePercentual: 0 },
-  }),
-}
+export const telemetryScenarios = Object.fromEntries(
+  Object.keys(scenarioDescriptions).map((name) => [name, criarCenario(name)]),
+);
+export const telemetryMock = telemetryScenarios["Operação normal"];
