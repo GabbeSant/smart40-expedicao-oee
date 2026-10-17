@@ -1,43 +1,55 @@
-# Blueprint de dados · Grupo 5 · aula 2
+# Blueprint · Grupo 5 · simulação independente
 
-## Origem
+## Origem e modelo
 
-Esta entrega funciona isoladamente com mocks locais. `src/mocks/telemetryMock.ts` fornece seis cenários; `src/domain/expedition.ts` controla sua evolução. O módulo não consome eventos externos nem abre WebSocket nesta etapa.
+Os cenários em `src/mocks/telemetryMock.ts` são demonstrações locais. Não há API, servidor, WebSocket ou consumo do Shell. `TelemetriaSmart40` é o modelo da interface local; o contrato preliminar em `contrato-smart40-v0.1.ts` permanece reservado para a futura integração e não é tratado como equivalente.
 
-`TelemetriaSmart40`, em `src/types/smart40.ts`, é o modelo **local da demonstração**, não um contrato de integração aprovado. O evento/tipo auxiliar remanescente nesse arquivo fica reservado para trabalho futuro; não é usado pelo painel.
+`SimulationState` contém telemetria, ordens, lote em recebimento, fila por ordem, prateleira, saídas, movimentações e premissas do OEE. O reducer atualiza o conjunto de forma atômica; suas funções não alteram o estado anterior.
 
-O contrato preliminar `docs/contrato-smart40-v0.1.ts` contém envelopes como `expedition.metrics` e `command.requested`, distintos do objeto local. A integração futura exigirá um adaptador e validação do payload, sem tratar esses formatos como equivalentes.
+## Premissas do armazenamento
 
-## Indicadores e premissas
+- Padrão: 12 posições em três linhas de quatro, configurável para 8, 16 ou 24.
+- Referência visual: [simulador de outros alunos](https://smart40.vercel.app/). A capacidade não está homologada para esta turma.
+- Cada posição recebe **um lote de até 50 peças**, da mesma OP/produto/destino. Essa capacidade também é uma premissa didática do nosso protótipo, não uma característica confirmada da bancada.
+- O lote usa o identificador legado `PAL-xxx`; os nomes de campos `palete`/`release` são internos. `release` agora significa armazenar o lote identificado, e somente `ship` confirma a saída.
+- Os cenários preenchidos incluem produção anterior ao início da demonstração. A prateleira e o histórico de saídas começam vazios; não reconstituem as saídas anteriores do turno.
 
-| Indicador | Origem ou cálculo |
+## Fluxo
+
+1. A OP possui código único, produto, meta inteira e destino. Entra na fila, ou torna-se ativa se não houver outra ativa.
+2. Cada peça processada aumenta exatamente um contador: aprovada ou rejeitada. Apenas aprovadas incrementam a OP e seguem ao recebimento.
+3. O lote em recebimento aceita peças da mesma OP, até a capacidade. Peças de outra OP ou recebidas após identificação vão para uma fila separada por ordem/destino.
+4. Identificação RFID **simulada** fecha o lote. Não se adicionam novas peças a ele.
+5. Armazenar exige lote identificado, posição livre e linha em operação. Ocupa-se a primeira posição livre, da esquerda para a direita e de cima para baixo.
+6. O próximo lote recebe até 50 peças do primeiro grupo da fila, mantendo o excedente e sem misturar ordens.
+7. Selecionar uma posição mostra OP, produto, lote, quantidade, destino e horário. Expedir exige confirmação, registra a saída e libera essa posição. Repetir a ação em uma posição vazia não duplica a saída.
+
+Prateleira cheia bloqueia armazenamento; as peças continuam na recepção/fila. Manutenção bloqueia produção, identificação, armazenamento e expedição. A simulação pausa durante modais. Ao concluir a última OP, a execução automática para.
+
+As movimentações registram recebimento, identificação, armazenamento e expedição. Uma transferência da fila para o lote também gera um registro de recebimento; esses eventos descrevem etapas, não devem ser somados como produção adicional.
+
+## OEE didático
+
+O formulário permite editar tempo planejado, paradas acumuladas e ciclo ideal. Os valores iniciais são deduzidos dos percentuais e contadores dos cenários para manter a coerência do mock; não são leituras de sensores.
+
+| Indicador | Cálculo |
 | --- | --- |
-| Total processado | Aprovadas + rejeitadas no turno didático |
-| Qualidade (%) | Aprovadas / total × 100 |
-| Refugo (%) | Rejeitadas / total × 100 |
-| Disponibilidade (%) | Parâmetro simulado, não medição de tempos reais |
-| Performance (%) | Parâmetro simulado, não medição de ciclo real |
-| OEE (%) | Disponibilidade × performance × qualidade / 10000 |
-| Ritmo nominal | Parâmetro de 12 peças/min; 1 peça por intervalo de 5 s enquanto a simulação está ativa |
-| MTBF | Não disponível: faltam tempos operacionais e registros de falhas |
+| Tempo operacional | Planejado − paradas |
+| Disponibilidade | Operacional / planejado × 100 |
+| Performance | Total × ciclo ideal / operacional × 100, limitada a 100% neste modelo |
+| Qualidade | Aprovadas / total × 100 |
+| Refugo | Rejeitadas / total × 100 |
+| OEE | D × P × Q / 10000, usando componentes percentuais |
+| MTBF | Indisponível: não há registros de falhas |
 
-Sem peças, a interface apresenta OEE/qualidade como “sem amostra”. Disponibilidade e performance são exibidas como premissas. Os limites de OEE ≥ 85% e refugo ≤ 5% são referências didáticas escolhidas para demonstrar alertas; não são limites homologados da planta.
+Cada nova peça acrescenta cinco segundos ao relógio didático do turno. Pausa e etapas logísticas não aumentam esses tempos; esse modelo não mede tempos reais de movimentação ou disponibilidade. A simulação automática avança uma peça a cada cinco segundos de navegador, sujeita ao atraso de timers em abas em segundo plano.
 
-## Transições da simulação
+Sem peças, qualidade e OEE aparecem sem amostra; divisões sem denominador usam zero internamente. O histórico de 08h–14h é didático, e novas peças entram na última faixa. Referências de OEE ≥ 85% e refugo ≤ 5% servem apenas para os alertas.
 
-- Inicia pausada. O botão de avanço manual produz uma peça sem iniciar o temporizador.
-- Operação normal rejeita a cada 20 novas peças; refugo elevado rejeita a cada 4. Essa sequência é determinística.
-- Cada peça incrementa o total e exatamente um contador de aprovação/rejeição. Qualidade e OEE são recalculados.
-- Uma aprovada incrementa a ordem ativa. Ao alcançar a meta, essa ordem conclui e a primeira aguardando torna-se ativa. Sem ordens ativas, a produção para.
-- Aprovadas entram no palete até a capacidade. O excedente entra na fila. Rejeitadas não entram nas ordens/paletes.
-- Liberar um palete exige confirmação e pelo menos uma peça. A linha em manutenção bloqueia essa ação. Registra-se quantidade, destino e horário; o próximo palete recebe até sua capacidade a partir da fila, preservando o excedente.
-- Abertura de modal suspende o temporizador. Cancelar não altera os dados. Ao fechar, a simulação retoma se estava ativa.
-- Trocar cenário/reiniciar limpa saídas, contador de passos e temporizador. Recarregar também descarta a sessão.
+## Persistência e relatórios
 
-O histórico de 08h a 14h representa um turno **didático**, não o relógio da máquina. As novas peças entram na última faixa (13h–14h). A soma das barras corresponde aos contadores do cenário.
+O estado é salvo no `localStorage`, chave `smart40-expedition-v3`, com versão de formato e validação na leitura. Ao recarregar, os dados retornam com a execução pausada. Uma sessão inválida usa um novo cenário e mostra aviso; falhas de salvamento são informadas sem impedir a demonstração.
 
-## Limites desta entrega
+Reiniciar ou trocar cenário substitui ordens, rack, fila e históricos salvos. Não há sincronização entre dispositivos/abas nem persistência em servidor. Armazenamento bloqueado ou limpeza dos dados do navegador pode apagar a demonstração.
 
-O mock Node do professor não fornece ordens, paletes, histórico ou todos os componentes do OEE exigidos pelo modelo local. Portanto não deve ser conectado diretamente à interface esperando equivalência. Quando a integração começar, separar os campos disponíveis dos demonstrativos, tratar indisponibilidade e validar todos os campos usados.
-
-Não há persistência, conexão real, leitura de sensores ou envio de comandos. O simulador do navegador usa intervalos, sujeitos à limitação de timers em abas em segundo plano; não mede produtividade real.
+CSV inclui indicadores, premissas, ordens filtradas com destinos, posições, movimentações e saídas. PDF usa a impressão do navegador. A origem simulada é preservada em ambos.

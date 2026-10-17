@@ -1,35 +1,39 @@
-# Demonstração · Grupo 5 · 4–5 minutos
+# Demonstração · Grupo 5 · 5 minutos
 
-## Antes da aula
+## Preparação
 
-Execute `npm ci` e `npm run dev`; abra `http://localhost:8084`. Confira `npm test`, `npm run lint` e `npm run build`. Deixe a página no cenário Operação normal, pausada. Não precisa de Shell, servidor mock ou internet para usar a aplicação depois de instalar as dependências.
+Use Node 24. Execute `npm ci`, `npm test`, `npm run lint`, `npm run build` e `npm run dev`; abra `http://localhost:8084`. No PowerShell com bloqueio de scripts, use `npm.cmd`.
 
-## 1. Apresentar o propósito
+O sistema restaura o último trabalho deste navegador, pausado. Para uma apresentação repetível, selecione **Novo planejamento**. Atenção: isso substitui os dados salvos.
 
-“Somos o Grupo 5. Nosso módulo mostra o posto final de Expedição: produtividade, eficiência, ordens, ocupação de paletes e fluxo de saída. Nesta etapa todos os dados e comandos são simulados.”
+## 1. Propósito e premissas
 
-Mostre o selo de simulação e a identificação do grupo.
+“Somos o Grupo 5. Este módulo acompanha produção, OEE e fluxo de expedição. Todos os dados e ações são simulados. As posições e capacidade por lote são premissas didáticas, sem conexão com a máquina.”
 
-## 2. Mostrar os indicadores
+## 2. Planejar
 
-Explique: total = aprovadas + rejeitadas; qualidade = aprovadas / total; refugo = rejeitadas / total. OEE combina disponibilidade, performance e qualidade. Disponibilidade/performance ainda são parâmetros do mock. MTBF é marcado como indisponível porque faltam registros de tempos e falhas.
+No Mapa da expedição, clique **Nova OP**. Cadastre `OP-DEMO`, produto `Carcaça A`, quantidade `2`, destino `Campinas`. Cadastre `OP-DEMO-B`, produto `Carcaça B`, quantidade `3`, destino `Santos`.
 
-Inicie a simulação, aguarde uma atualização e pause. Use `+ 1 peça` para mostrar atualização dos contadores, da ordem, do gráfico e do palete.
+Mostre as duas ordens: uma ativa e outra aguardando. Tente repetir um código para demonstrar a validação.
 
-## 3. Demonstrar os problemas
+## 3. Produzir e separar
 
-Selecione OEE baixo e mostre o alerta e os componentes. Troque para Refugo elevado; avance quatro peças e observe a rejeição. Trocar cenário reinicia o estado, tornando a demonstração repetível.
+Avance **+ 1 peça** três vezes. A primeira OP conclui com duas peças; a segunda inicia. Mostre que o lote mantém as duas peças da primeira OP, enquanto a peça da segunda fica na fila com seu destino preservado.
 
-## 4. Demonstrar a expedição
+Os contadores e o gráfico acompanham a produção. Rejeitadas não entram nas OPs ou lotes.
 
-Selecione Fila cheia. Mostre o palete de 50 peças e fila de 25. Clique em Simular liberação, confira destino e confirme. O palete enviado aparece no histórico; o próximo recebe as 25 peças da fila.
+## 4. Identificar, armazenar e expedir
 
-## 5. Mostrar as ordens e o relatório
+Clique **Identificar lote**, depois **Armazenar lote** e confirme. A posição 01 recebe o lote da primeira OP; o novo lote recebe a peça da segunda OP que aguardava.
 
-Filtre Em produção e pesquise por produto. Limpe os filtros. Exporte CSV e mostre indicadores, ordens e saídas. Clique em Salvar PDF e use a impressão do navegador. Os relatórios permanecem identificados como demonstração.
+Avance mais duas peças, identifique e armazene o segundo lote. Clique na posição 01: mostre OP, produto, quantidade, destino e horário. Clique **Simular expedição**, confira e confirme. A posição fica livre e o histórico registra a saída. O segundo lote permanece armazenado.
 
-## 6. Mostrar os limites e próximos passos
+## 5. Explicar OEE e salvar
 
-Selecione Produção parada: produção e saída ficam bloqueadas. Selecione Início de turno: OEE sem amostra; `+ 1 peça` inicia os contadores sem divisão por zero.
+Abra **Premissas do OEE** e mostre tempo planejado, paradas e ciclo ideal. Explique D = operação / planejado, P = total × ciclo / operação e Q = aprovadas / total. OEE = D × P × Q. Tempos e ciclo são simulados; MTBF permanece indisponível.
 
-“O protótipo já permite validar as telas e regras de expedição. Depois vamos confirmar as fontes, adaptar o contrato e integrar com o módulo compartilhado. Ainda não há conexão real com a planta.”
+Recarregue a página: OPs, posições, fila e históricos retornam, com a execução pausada. Exporte CSV e mostre os vínculos por OP/destino; Salvar PDF abre a impressão.
+
+## 6. Encerrar
+
+“Temos um fluxo local completo de planejamento, produção e expedição. O próximo passo é validar a representação da bancada com o professor e depois adaptar a integração com a turma.”

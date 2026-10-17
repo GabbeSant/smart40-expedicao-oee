@@ -75,10 +75,12 @@ test("palete cheio acumula fila e liberação conserva peças e registra destino
   let state = createSimulation(telemetryScenarios["Fila cheia"], "Fila cheia");
   state = simulationReducer(state, { type: "piece", timestamp });
   assert.equal(state.telemetry.metricasExpedicao.tamanhoFilaSaida, 26);
+  state = simulationReducer(state, { type: "identify", timestamp });
   state = simulationReducer(state, { type: "release", timestamp });
-  assert.equal(state.shipments[0].id, "PAL-023");
-  assert.equal(state.shipments[0].pieces, 50);
-  assert.equal(state.shipments[0].destination, "Centro de Distribuição SP");
+  assert.equal(state.rack[0]!.id, "PAL-023");
+  assert.equal(state.rack[0]!.pieces, 50);
+  assert.equal(state.rack[0]!.destination, "Centro de Distribuição SP");
+  assert.equal(state.shipments.length, 0);
   assert.equal(state.telemetry.dadosExpedicao.palete.codigo, "PAL-024");
   assert.equal(state.telemetry.dadosExpedicao.palete.pecas, 26);
   assert.equal(state.telemetry.metricasExpedicao.tamanhoFilaSaida, 0);
@@ -87,7 +89,12 @@ test("palete cheio acumula fila e liberação conserva peças e registra destino
 test("fila acima de um palete não perde peças na liberação", () => {
   const initial = createSimulation(telemetryScenarios["Fila cheia"]);
   initial.telemetry.metricasExpedicao.tamanhoFilaSaida = 73;
-  const state = simulationReducer(initial, { type: "release", timestamp });
+  initial.queue[0].pieces = 73;
+  const identified = simulationReducer(initial, {
+    type: "identify",
+    timestamp,
+  });
+  const state = simulationReducer(identified, { type: "release", timestamp });
   assert.equal(state.telemetry.dadosExpedicao.palete.pecas, 50);
   assert.equal(state.telemetry.metricasExpedicao.tamanhoFilaSaida, 23);
 });
@@ -106,7 +113,7 @@ test("parada e palete vazio não produzem ou registram saída", () => {
   assert.equal(simulationReducer(empty, { type: "release", timestamp }), empty);
   const firstPiece = simulationReducer(empty, { type: "piece", timestamp });
   assert.equal(firstPiece.telemetry.metricasExpedicao.qualidadePercentual, 100);
-  assert.equal(firstPiece.telemetry.metricasExpedicao.oeePercentual, 91.2);
+  assert.equal(firstPiece.telemetry.metricasExpedicao.oeePercentual, 100);
 });
 
 test("concluir a ordem ativa inicia a próxima e respeita a meta", () => {
@@ -121,7 +128,10 @@ test("concluir a ordem ativa inicia a próxima e respeita a meta", () => {
 test("trocar cenário reinicia a demonstração e isola alterações dos modelos", () => {
   let state = createSimulation(telemetryScenarios["Operação normal"]);
   state = simulationReducer(state, { type: "toggle" });
+  state = simulationReducer(state, { type: "identify", timestamp });
   state = simulationReducer(state, { type: "release", timestamp });
+  state = simulationReducer(state, { type: "ship", position: 0, timestamp });
+  assert.equal(state.shipments.length, 1);
   state = simulationReducer(state, {
     type: "scenario",
     name: "Fila cheia",

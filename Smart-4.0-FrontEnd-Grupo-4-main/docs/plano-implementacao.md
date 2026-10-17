@@ -1,36 +1,30 @@
-# Plano de implementação · Grupo 5
+# Plano · Grupo 5 · Expedição & OEE
 
-## Escopo confirmado
+## Implementado
 
-Grupo 5: Expedição, Logística e OEE. O nome antigo da pasta não define o grupo. Entrega atual para aula 2: protótipo independente com dados locais; integração com o Shell fica fora desta etapa.
+- Painel responsivo com produção, qualidade, refugo, OEE, histórico didático e estados sem amostra.
+- Sete cenários, incluindo **Novo planejamento** para cadastrar as próprias ordens e começar do zero.
+- Cadastro de OP com código único, produto, quantidade e destino; validação, fila, busca, filtros e conclusão automática.
+- Mapa 2D da expedição: recebimento → identificação RFID simulada → armazenamento → expedição.
+- Prateleira de 12 posições configurável; seleção mostra os dados do lote.
+- Separação de lotes por OP/destino, fila preservada, bloqueio de armazenamento cheio e proteção contra saída duplicada.
+- Confirmação de armazenamento/expedição, registro de movimentações e histórico de saídas.
+- Premissas editáveis de tempo planejado, paradas e ciclo ideal; cálculo didático de D/P/Q/OEE.
+- Salvamento local versionado, restauração pausada, tratamento de dados inválidos e reinício com confirmação.
+- CSV ampliado, impressão em PDF, testes de domínio e verificação no navegador.
 
-As referências consultadas incluem o guia Markdown, tema, mock e os trechos de Expedição/OEE dos PDFs `Aula_10_FFE_SPRINT1`, `especificacao_tecnica_frontend_smart40`, `Guia Completo` e `Guia Checklist`. O runbook de Sprint 1 determina trabalhar com simulação e identificar a origem dos indicadores; a especificação geral descreve a evolução futura. Requisitos industriais e de integração não são apresentados como atendidos por este protótipo.
+## Decisões
 
-## Implementado para a aula 2
+Manter React + TypeScript + Vite, sem backend, roteador, biblioteca de gráficos ou dependência do Shell. A lógica fica em `src/domain`, a nova interface em `src/components`, e os materiais ignorados de `docs/SMART40FFE` não são necessários para executar o projeto.
 
-- Painel responsivo de Expedição/OEE com identidade industrial e identificação de origem simulada.
-- Cenários de operação normal, OEE baixo, refugo elevado, fila cheia, produção parada e início de turno.
-- Simulação automática pausável e avanço manual de uma peça.
-- Contadores, qualidade, refugo, OEE e histórico coerentes entre si.
-- Gráfico com escala dinâmica e tabela dos valores.
-- Ordens com busca/filtro, avanço de progresso e conclusão automática.
-- Palete com posições, fila, confirmação de liberação e histórico local de saídas.
-- Alertas didáticos e estados vazios, sem preencher métricas ausentes com falsas medições.
-- Exportação CSV e impressão em PDF.
-- Testes da lógica, lint e build; documentação e roteiro de apresentação.
+As 12 posições da referência de outros alunos e os lotes de até 50 peças são premissas de simulação configuradas para a apresentação. Não comprovam a configuração física da bancada desta turma. Veja as regras e fórmulas em `blueprint-dados.md`.
 
-## Decisões para manter simples
+## Próximos passos após esta versão
 
-Manter React + TypeScript + Vite. Sem roteador, banco de dados, API, biblioteca de gráficos ou gerenciamento global adicional. Estado local com reducer permite atualizar produção, ordens, palete e fila juntos; funções isoladas permitem testar os cálculos.
+1. Apresentar o fluxo completo ao professor e validar a unidade armazenada: peça, pedido montado ou lote; confirmar capacidade e sequência da bancada.
+2. Ajustar nomenclatura e parâmetros conforme essa validação, mantendo a origem dos dados explícita.
+3. Definir fontes e adaptar o contrato quando chegar a etapa de integração com a turma.
+4. Só então configurar montagem/desmontagem do módulo, conexão compartilhada e estados de telemetria indisponível.
+5. Preparar publicação e automação conforme a forma de entrega definida pela disciplina.
 
-O tema usado fica em `src/styles/theme.css`, com tokens da referência do professor. A aplicação não depende de materiais ignorados em `docs/SMART40FFE`.
-
-## Evolução após validar o protótipo com o professor
-
-1. Validar nomenclatura, critérios de avaliação e fórmulas. Para OEE medido, obter tempo planejado, tempo operacional e ciclo ideal. Para MTBF, obter tempos e falhas.
-2. Confirmar uma fonte para ordens, paletes e histórico. Só depois definir leitura/persistência necessárias.
-3. Mapear `expedition.metrics` e os demais envelopes aprovados para o modelo de tela. Não assumir que o mock do professor e o contrato preliminar têm o mesmo formato.
-4. Na fase de integração, acordar formato do módulo e fonte compartilhada, implementar montagem/desmontagem e estados de desconexão/telemetria desatualizada.
-5. Configurar publicação e automação quando a forma de entrega estiver definida.
-
-Nenhuma dessas etapas futuras é necessária para apresentar o módulo na aula 2.
+Conexão industrial, envio de comandos reais e integração com o Shell continuam fora desta etapa.

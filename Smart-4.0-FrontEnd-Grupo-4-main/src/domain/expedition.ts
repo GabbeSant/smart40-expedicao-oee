@@ -1,3 +1,16 @@
+import {
+  createWarehouse,
+  receivePiece,
+  recalculateOee,
+  identifyBatch,
+  storeBatch,
+  shipBatch,
+  validateOrder,
+  validateOee,
+  type WarehouseState,
+  type OrderDraft,
+  type OeeInputs,
+} from "./warehouse.ts";
 import type { TelemetriaSmart40 } from "../types/smart40";
 
 export interface Shipment {
@@ -5,8 +18,11 @@ export interface Shipment {
   pieces: number;
   destination: string;
   timestamp: string;
+  orderCode: string;
+  product: string;
+  position: number;
 }
-export interface SimulationState {
+export interface SimulationState extends WarehouseState {
   telemetry: TelemetriaSmart40;
   scenario: string;
   running: boolean;
@@ -17,19 +33,27 @@ export type SimulationAction =
   | { type: "scenario"; name: string; telemetry: TelemetriaSmart40 }
   | { type: "toggle" }
   | { type: "piece"; timestamp: string }
-  | { type: "release"; timestamp: string };
+  | { type: "release"; timestamp: string }
+  | { type: "identify"; timestamp: string }
+  | { type: "ship"; position: number; timestamp: string }
+  | { type: "add-order"; draft: OrderDraft; timestamp: string }
+  | { type: "oee"; inputs: OeeInputs }
+  | { type: "resize-rack"; capacity: number };
 
 export function createSimulation(
   telemetry: TelemetriaSmart40,
   scenario = "Operação normal",
 ): SimulationState {
-  return {
+  const state: SimulationState = {
     telemetry: structuredClone(telemetry),
     scenario,
     running: false,
     steps: 0,
     shipments: [],
+    ...createWarehouse(telemetry),
   };
+  recalculateOee(state);
+  return state;
 }
 
 export function simulationReducer(
@@ -39,23 +63,50 @@ export function simulationReducer(
   if (action.type === "scenario")
     return createSimulation(action.telemetry, action.name);
   if (action.type === "toggle") return { ...state, running: !state.running };
-  const telemetry = structuredClone(state.telemetry);
-  const metrics = telemetry.metricasExpedicao;
-  const pallet = telemetry.dadosExpedicao.palete;
-  if (action.type === "release") {
-    if (!pallet.pecas || telemetry.estadoGlobal !== "EM_EXECUCAO") return state;
-    const shipment = {
-      id: pallet.codigo,
-      pieces: pallet.pecas,
-      destination: pallet.destino,
-      timestamp: action.timestamp,
+  if (action.type === "identify") return identifyBatch(state, action.timestamp);
+  if (action.type === "release") return storeBatch(state, action.timestamp);
+  if (action.type === "ship")
+    return shipBatch(state, action.position, action.timestamp);
+  if (action.type === "resize-rack") {
+    if (
+      ![8, 12, 16, 24].includes(action.capacity) ||
+      state.rack.slice(action.capacity).some(Boolean)
+    )
+      return state;
+    return {
+      ...state,
+      rack: Array.from(
+        { length: action.capacity },
+        (_, i) => state.rack[i] ?? null,
+      ),
     };
-    pallet.codigo = `PAL-${String(Number(pallet.codigo.split("-")[1]) + 1).padStart(3, "0")}`;
-    pallet.pecas = Math.min(pallet.capacidade, metrics.tamanhoFilaSaida);
-    metrics.tamanhoFilaSaida -= pallet.pecas;
-    telemetry.timestamp = action.timestamp;
-    return { ...state, telemetry, shipments: [shipment, ...state.shipments] };
   }
+  if (action.type === "add-order") {
+    if (validateOrder(action.draft, state.telemetry.dadosExpedicao.ordens))
+      return state;
+    const next = structuredClone(state);
+    next.telemetry.dadosExpedicao.ordens.push({
+      ...action.draft,
+      produzido: 0,
+      status: next.telemetry.dadosExpedicao.ordens.some(
+        (o) => o.status === "ATIVA",
+      )
+        ? "AGUARDANDO"
+        : "ATIVA",
+    });
+    next.telemetry.timestamp = action.timestamp;
+    return next;
+  }
+  if (action.type === "oee") {
+    if (validateOee(action.inputs)) return state;
+    const next = structuredClone(state);
+    next.oeeInputs = action.inputs;
+    recalculateOee(next);
+    return next;
+  }
+  const next = structuredClone(state);
+  const telemetry = next.telemetry;
+  const metrics = telemetry.metricasExpedicao;
   if (
     telemetry.estadoGlobal !== "EM_EXECUCAO" ||
     !telemetry.dadosExpedicao.ordens.some((order) => order.status === "ATIVA")
@@ -67,11 +118,11 @@ export function simulationReducer(
   if (rejected) metrics.pecasRejeitadasCount++;
   else {
     metrics.pecasAprovadasCount++;
-    if (pallet.pecas < pallet.capacidade) pallet.pecas++;
-    else metrics.tamanhoFilaSaida++;
+
     const orders = telemetry.dadosExpedicao.ordens;
     const active = orders.find((order) => order.status === "ATIVA");
     if (active) {
+      receivePiece(next, active, action.timestamp);
       active.produzido = Math.min(active.meta, active.produzido + 1);
       if (active.produzido === active.meta) {
         active.status = "FINALIZADA";
@@ -80,13 +131,8 @@ export function simulationReducer(
       }
     }
   }
-  metrics.qualidadePercentual =
-    (metrics.pecasAprovadasCount / metrics.pecasProcessadasTotal) * 100;
-  metrics.oeePercentual =
-    (metrics.disponibilidadePercentual *
-      metrics.performancePercentual *
-      metrics.qualidadePercentual) /
-    10000;
+  next.oeeInputs.plannedSeconds += 5;
+  recalculateOee(next);
   const last = metrics.historico?.at(-1);
   if (last) {
     if (rejected) last.rejeitadas++;
@@ -100,7 +146,11 @@ export function simulationReducer(
     statusInspecao: rejected ? "REJEITADA" : "APROVADA",
     qualidadeSuperficie: rejected ? 71 : 98.5,
   };
-  return { ...state, telemetry, steps };
+  if (
+    !telemetry.dadosExpedicao.ordens.some((order) => order.status === "ATIVA")
+  )
+    next.running = false;
+  return { ...next, telemetry, steps };
 }
 
 export function getAlerts(telemetry: TelemetriaSmart40) {
@@ -115,9 +165,9 @@ export function getAlerts(telemetry: TelemetriaSmart40) {
   )
     alerts.push({
       tone: "amber",
-      title: "Ordens concluídas",
+      title: "Nenhuma OP ativa",
       detail:
-        "O planejamento deste cenário foi concluído. Reinicie para uma nova demonstração.",
+        "Cadastre uma nova OP para iniciar a produção ou reinicie a demonstração.",
     });
   if (telemetry.estadoGlobal !== "EM_EXECUCAO")
     alerts.push({
@@ -149,7 +199,7 @@ export function getAlerts(telemetry: TelemetriaSmart40) {
     alerts.push({
       tone: "amber",
       title: "Palete completo",
-      detail: `Simule a liberação. ${m.tamanhoFilaSaida} peças aguardam na fila.`,
+      detail: `Identifique e armazene o lote. ${m.tamanhoFilaSaida} peças aguardam na fila.`,
     });
   if (!m.pecasProcessadasTotal)
     alerts.push({

@@ -1,7 +1,6 @@
 import {
   useEffect,
   useReducer,
-  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -11,14 +10,16 @@ import {
   telemetryScenarios,
   scenarioDescriptions,
 } from "./mocks/telemetryMock";
-import {
-  createSimulation,
-  getAlerts,
-  simulationReducer,
-  toCsv,
-} from "./domain/expedition";
+import { getAlerts, simulationReducer, toCsv } from "./domain/expedition";
 import type { StatusOrdem } from "./types/smart40";
 import "./App.css";
+import { LogisticsPanel } from "./components/LogisticsPanel";
+import { Modal } from "./components/Modal";
+import {
+  STORAGE_KEY,
+  restoreSimulation,
+  serializeSimulation,
+} from "./domain/persistence";
 
 const number = (value: number, digits = 0) =>
   value.toLocaleString("pt-BR", {
@@ -113,15 +114,31 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 }
 
 function App() {
-  const [state, dispatch] = useReducer(
-    simulationReducer,
-    telemetryMock,
-    createSimulation,
+  const [initial] = useState(() => {
+    try {
+      return restoreSimulation(
+        localStorage.getItem(STORAGE_KEY),
+        telemetryMock,
+      );
+    } catch {
+      return restoreSimulation(null, telemetryMock);
+    }
+  });
+  const [state, dispatch] = useReducer(simulationReducer, initial.state);
+  const [notice, setNotice] = useState(
+    initial.invalid
+      ? "Sessão salva inválida. Uma nova demonstração foi iniciada."
+      : initial.restored
+        ? "Demonstração restaurada. A simulação está pausada."
+        : "",
   );
-  const [notice, setNotice] = useState("");
+  const [workflowOpen, setWorkflowOpen] = useState(false);
+  const [persistence, setPersistence] = useState(
+    "Preparando salvamento local…",
+  );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("TODAS");
-  const [modal, setModal] = useState<"release" | "reset" | "help" | null>(null);
+  const [modal, setModal] = useState<"reset" | "help" | null>(null);
   const { telemetry, running, scenario, shipments } = state;
   const metrics = telemetry.metricasExpedicao;
   const { ordens: orders, palete: pallet } = telemetry.dadosExpedicao;
@@ -151,19 +168,32 @@ function App() {
   const shippedPieces = shipments.reduce((sum, item) => sum + item.pieces, 0);
 
   useEffect(() => {
-    if (!running || !canProduce || modal) return;
+    if (!running || !canProduce || modal || workflowOpen) return;
     const interval = window.setInterval(
       () => dispatch({ type: "piece", timestamp: new Date().toISOString() }),
       5000,
     );
     return () => window.clearInterval(interval);
-  }, [running, canProduce, modal]);
+  }, [running, canProduce, modal, workflowOpen]);
 
   useEffect(() => {
     if (!notice) return;
     const timeout = window.setTimeout(() => setNotice(""), 4500);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    let message =
+      "Salvo neste navegador · ao reabrir, a simulação inicia pausada";
+    try {
+      localStorage.setItem(STORAGE_KEY, serializeSimulation(state));
+    } catch {
+      message =
+        "Não foi possível salvar neste navegador. Mantenha esta página aberta para preservar os dados.";
+    }
+    const timer = window.setTimeout(() => setPersistence(message), 0);
+    return () => window.clearTimeout(timer);
+  }, [state]);
 
   const chooseScenario = (name: string) => {
     const next = structuredClone(telemetryScenarios[name]);
@@ -202,22 +232,51 @@ function App() {
       ],
       [],
       ["Ordens: filtros aplicados", `${filter} · busca: ${query || "nenhuma"}`],
-      ["Ordem", "Produto", "Meta", "Produzido", "Status"],
+      ["Ordem", "Produto", "Meta", "Produzido", "Status", "Destino"],
       ...visibleOrders.map((order) => [
         order.codigo,
         order.produto,
         order.meta,
         order.produzido,
         statusNames[order.status],
+        order.destino,
       ]),
       [],
-      ["Saídas simuladas nesta sessão"],
-      ["Palete", "Peças", "Destino", "Horário"],
+      ["Premissas simuladas"],
+      ["Tempo planejado (s)", state.oeeInputs.plannedSeconds],
+      ["Paradas (s)", state.oeeInputs.stoppedSeconds],
+      ["Ciclo ideal (s)", state.oeeInputs.idealCycleSeconds],
+      [],
+      ["Prateleira simulada", state.rack.length],
+      ["Posição", "Lote", "OP", "Produto", "Peças", "Destino"],
+      ...state.rack.map((batch, index) => [
+        index + 1,
+        batch?.id ?? "Livre",
+        batch?.orderCode ?? "",
+        batch?.product ?? "",
+        batch?.pieces ?? 0,
+        batch?.destination ?? "",
+      ]),
+      [],
+      ["Movimentações simuladas"],
+      ["Etapa", "OP", "Peças", "Posição", "Horário"],
+      ...state.movements.map((item) => [
+        item.stage,
+        item.orderCode,
+        item.pieces,
+        item.position ?? "",
+        item.timestamp,
+      ]),
+      [],
+      ["Saídas simuladas"],
+      ["Lote", "Peças", "Destino", "Horário", "OP", "Posição"],
       ...shipments.map((item) => [
         item.id,
         item.pieces,
         item.destination,
         item.timestamp,
+        item.orderCode,
+        item.position,
       ]),
     ];
     const url = URL.createObjectURL(
@@ -230,14 +289,6 @@ function App() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(
       "Relatório CSV gerado com os indicadores, ordens filtradas e saídas simuladas.",
-    );
-  };
-
-  const release = () => {
-    dispatch({ type: "release", timestamp: new Date().toISOString() });
-    setModal(null);
-    setNotice(
-      `${pallet.codigo}: saída de ${pallet.pecas} peças registrada na simulação.`,
     );
   };
 
@@ -345,7 +396,9 @@ function App() {
             </div>
             <p>
               {scenarioDescriptions[scenario]}
-              <small>Trocar cenário reinicia as alterações locais.</small>
+              <small>
+                Trocar cenário substitui ordens, posições e dados salvos.
+              </small>
             </p>
             <div className="simulation-actions">
               <button
@@ -393,6 +446,12 @@ function App() {
             </span>
           </div>
 
+          <p
+            className={`persistence-note ${persistence.startsWith("Não") ? "error" : ""}`}
+            role="status"
+          >
+            {persistence}
+          </p>
           <section
             className="overview-grid"
             aria-label="Indicadores do turno demonstrativo"
@@ -503,8 +562,8 @@ function App() {
               <div className="formula-note">
                 <Icon name="info" size={15} />
                 <span>
-                  D e P são parâmetros do cenário. Q = aprovadas ÷ total. OEE =
-                  D × P × Q.
+                  D usa tempos simulados; P usa ciclo ideal e total. Q =
+                  aprovadas ÷ total. OEE = D × P × Q.
                 </span>
               </div>
               <div className="mtbf">
@@ -654,18 +713,24 @@ function App() {
                 </span>
                 <strong>{metrics.tamanhoFilaSaida} peças</strong>
               </div>
-              <button
-                className="button release-button"
-                disabled={
-                  !pallet.pecas || telemetry.estadoGlobal !== "EM_EXECUCAO"
-                }
-                onClick={() => setModal("release")}
-              >
-                Simular liberação
-                <Icon name="arrow" size={16} />
-              </button>
+              <a className="button release-button" href="#mapa">
+                Identificar e armazenar lote <Icon name="arrow" size={16} />
+              </a>
+              <p className="rack-note">
+                {state.receipt.orderCode || "Sem OP"} ·{" "}
+                {state.receipt.identifiedAt
+                  ? "Identificado · lote fechado"
+                  : "Em recebimento"}
+              </p>
             </article>
           </section>
+
+          <LogisticsPanel
+            state={state}
+            dispatch={dispatch}
+            onDialogChange={setWorkflowOpen}
+            notify={setNotice}
+          />
 
           <section
             className="alerts-section"
@@ -757,6 +822,9 @@ function App() {
                       <td>
                         <strong className="order-code">{order.codigo}</strong>
                         <span className="product-name">{order.produto}</span>
+                        <span className="product-name">
+                          Destino: {order.destino}
+                        </span>
                       </td>
                       <td>
                         {number(order.meta)} <small>un.</small>
@@ -845,10 +913,10 @@ function App() {
                   <Icon name="box" size={24} />
                 </span>
                 <div>
-                  <strong>O próximo palete começa este histórico.</strong>
+                  <strong>A próxima expedição começa este histórico.</strong>
                   <p>
-                    Simule uma liberação para registrar peças, destino e horário
-                    nesta sessão.
+                    Armazene um lote, selecione sua posição e confirme a
+                    expedição.
                   </p>
                 </div>
               </div>
@@ -865,7 +933,9 @@ function App() {
                         <span className="subtle-tag">SAÍDA SIMULADA</span>
                       </strong>
                       <p>
-                        {shipment.pieces} peças → {shipment.destination}
+                        {shipment.orderCode} · {shipment.product} ·{" "}
+                        {shipment.pieces} peças → {shipment.destination} ·
+                        posição {shipment.position}
                       </p>
                     </div>
                     <time dateTime={shipment.timestamp}>
@@ -881,8 +951,7 @@ function App() {
               <strong>SMART 4.0</strong> · Grupo 5 / Expedição & OEE
             </span>
             <span>
-              Protótipo · aula 2 · mock local · alterações mantidas apenas nesta
-              sessão
+              Protótipo · Grupo 5 · mock local · dados salvos neste navegador
             </span>
           </footer>
         </main>
@@ -903,39 +972,17 @@ function App() {
       {modal && (
         <Modal
           title={
-            modal === "release"
-              ? "Simular saída do palete?"
-              : modal === "reset"
-                ? "Reiniciar demonstração?"
-                : "Uma janela para a expedição"
+            modal === "reset"
+              ? "Reiniciar e limpar dados salvos?"
+              : "Uma janela para a expedição"
           }
           onClose={() => setModal(null)}
         >
-          {modal === "release" ? (
+          {modal === "reset" ? (
             <>
               <p>
-                Registrar <strong>{pallet.codigo}</strong> com{" "}
-                <strong>{pallet.pecas} peças</strong> para {pallet.destino}.
-              </p>
-              <div className="modal-note">
-                Ação apenas local. O próximo palete recebe até{" "}
-                {pallet.capacidade} peças da fila. Nenhum comando é enviado à
-                planta.
-              </div>
-              <div className="modal-actions">
-                <button className="button" onClick={() => setModal(null)}>
-                  Cancelar
-                </button>
-                <button className="button primary" onClick={release}>
-                  Confirmar simulação
-                  <Icon name="arrow" size={16} />
-                </button>
-              </div>
-            </>
-          ) : modal === "reset" ? (
-            <>
-              <p>
-                Os contadores, ordens e saídas voltam ao início do cenário{" "}
+                As ordens cadastradas, posições, movimentações e dados salvos
+                serão substituídos pelo início do cenário{" "}
                 <strong>{scenario}</strong>. A simulação ficará pausada.
               </p>
               <div className="modal-actions">
@@ -973,15 +1020,15 @@ function App() {
                   ocupação do palete.
                 </li>
                 <li>
-                  Simule uma saída e exporte os resultados em CSV ou pela
-                  impressão em PDF.
+                  Cadastre uma OP, identifique o lote, armazene em uma posição
+                  e confirme sua expedição. Exporte CSV ou PDF.
                 </li>
               </ol>
               <div className="modal-note">
-                Todos os valores são simulados. Disponibilidade e performance
-                são premissas didáticas; qualidade usa os contadores. MTBF
-                aguarda registros de tempo e falhas. Recarregar a página ou
-                trocar de cenário reinicia os dados.
+                Todos os valores são simulados. Edite tempos e ciclo ideal em
+                Premissas do OEE. MTBF aguarda registros de falhas. A
+                demonstração é salva neste navegador e restaurada pausada;
+                trocar cenário ou reiniciar substitui os dados salvos.
               </div>
               <button
                 className="button primary help-done"
@@ -1064,41 +1111,4 @@ function EfficiencyBar({
     </div>
   );
 }
-function Modal({
-  title,
-  children,
-  onClose,
-}: {
-  title: string;
-  children: ReactNode;
-  onClose: () => void;
-}) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const element = dialog.current;
-    const trigger = document.activeElement;
-    element?.showModal();
-    return () => {
-      element?.close();
-      if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
-    };
-  }, []);
-  return (
-    <dialog ref={dialog} onCancel={onClose} aria-labelledby="dialog-title">
-      <div className="modal-heading">
-        <span className="eyebrow">SMART 4.0 · DEMONSTRAÇÃO</span>
-        <button
-          className="icon-button"
-          onClick={onClose}
-          aria-label="Fechar janela"
-        >
-          <Icon name="close" size={19} />
-        </button>
-      </div>
-      <h2 id="dialog-title">{title}</h2>
-      {children}
-    </dialog>
-  );
-}
-
 export default App;

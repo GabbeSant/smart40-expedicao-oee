@@ -1,6 +1,8 @@
 import type { TelemetriaSmart40 } from "../types/smart40";
 
 export const scenarioDescriptions: Record<string, string> = {
+  "Novo planejamento":
+    "Comece do zero: cadastre uma OP com produto, quantidade e destino.",
   "Operação normal":
     "Produção estável, baixo refugo e espaço disponível no palete.",
   "OEE baixo": "Perdas de disponibilidade e performance reduzem a eficiência.",
@@ -12,12 +14,12 @@ export const scenarioDescriptions: Record<string, string> = {
 };
 
 function criarCenario(name: string): TelemetriaSmart40 {
-  const empty = name === "Início de turno";
+  const empty = name === "Início de turno" || name === "Novo planejamento";
   const rejected = name === "Refugo elevado" ? 32 : 4;
   const total = empty ? 0 : 142;
   const approved = empty ? 0 : total - rejected;
   const availability =
-    name === "Produção parada" ? 0 : name === "OEE baixo" ? 62 : 95;
+    name === "Produção parada" ? 75 : name === "OEE baixo" ? 62 : 95;
   const performance = name === "OEE baixo" ? 76 : 96;
   const quality = total ? (approved / total) * 100 : 0;
   const now = new Date().toISOString();
@@ -57,29 +59,35 @@ function criarCenario(name: string): TelemetriaSmart40 {
       }),
     },
     dadosExpedicao: {
-      ordens: [
-        {
-          codigo: "OP-001",
-          produto: "Carcaça A · lote A9",
-          meta: 160,
-          produzido: empty ? 0 : approved - 40,
-          status: "ATIVA",
-        },
-        {
-          codigo: "OP-002",
-          produto: "Eixo B · lote B2",
-          meta: 120,
-          produzido: 0,
-          status: "AGUARDANDO",
-        },
-        {
-          codigo: "OP-003",
-          produto: "Suporte C · lote C4",
-          meta: 40,
-          produzido: empty ? 0 : 40,
-          status: empty ? "AGUARDANDO" : "FINALIZADA",
-        },
-      ],
+      ordens:
+        name === "Novo planejamento"
+          ? []
+          : [
+              {
+                codigo: "OP-001",
+                produto: "Carcaça A · lote A9",
+                meta: 160,
+                produzido: empty ? 0 : approved - 40,
+                status: "ATIVA",
+                destino: "Centro de Distribuição SP",
+              },
+              {
+                codigo: "OP-002",
+                produto: "Eixo B · lote B2",
+                meta: 120,
+                produzido: 0,
+                status: "AGUARDANDO",
+                destino: "Unidade Campinas",
+              },
+              {
+                codigo: "OP-003",
+                produto: "Suporte C · lote C4",
+                meta: 40,
+                produzido: empty ? 0 : 40,
+                status: empty ? "AGUARDANDO" : "FINALIZADA",
+                destino: "Unidade Santo André",
+              },
+            ],
       palete: {
         codigo: "PAL-023",
         pecas: empty ? 0 : name === "Fila cheia" ? 50 : 37,
