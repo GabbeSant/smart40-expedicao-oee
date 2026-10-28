@@ -1,6 +1,5 @@
 # SMART 4.0 — Expedição & OEE
 
-OLÁ
 Micro-frontend desenvolvido pelo Grupo 5 para o projeto
 SMART 4.0 da disciplina Frameworks Front-End.
 
