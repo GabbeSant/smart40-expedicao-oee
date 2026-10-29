@@ -21,7 +21,10 @@ const batch = (v: unknown) =>
   v.pieces > 0;
 
 export function serializeSimulation(state: SimulationState): string {
-  return JSON.stringify({ version: 3, state: { ...state, running: false } });
+  return JSON.stringify({
+    version: 3,
+    state: { ...state, running: false, machineSnapshot: null },
+  });
 }
 
 function validSnapshot(s: unknown): s is SimulationState {

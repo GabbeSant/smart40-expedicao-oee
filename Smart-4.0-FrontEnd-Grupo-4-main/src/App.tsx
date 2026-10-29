@@ -20,6 +20,10 @@ import {
   restoreSimulation,
   serializeSimulation,
 } from "./domain/persistence";
+import {
+  isMachineExpeditionSnapshot,
+  SMART40_EXPEDITION_SNAPSHOT_EVENT,
+} from "./integration/expedition";
 
 const number = (value: number, digits = 0) =>
   value.toLocaleString("pt-BR", {
@@ -140,6 +144,8 @@ function App() {
   const [filter, setFilter] = useState("TODAS");
   const [modal, setModal] = useState<"reset" | "help" | null>(null);
   const { telemetry, running, scenario, shipments } = state;
+  const machineReadOnly =
+    !!state.machineSnapshot && state.machineSnapshot.source !== "simulated";
   const metrics = telemetry.metricasExpedicao;
   const { ordens: orders, palete: pallet } = telemetry.dadosExpedicao;
   const hasProduction = metrics.pecasProcessadasTotal > 0;
@@ -166,6 +172,9 @@ function App() {
   );
   const alerts = getAlerts(telemetry);
   const shippedPieces = shipments.reduce((sum, item) => sum + item.pieces, 0);
+  const dataSourceLabel = state.machineSnapshot
+    ? `${state.machineSnapshot.source} · ${state.machineSnapshot.connection}`
+    : "Mock local · dados simulados";
 
   useEffect(() => {
     if (!running || !canProduce || modal || workflowOpen) return;
@@ -177,12 +186,47 @@ function App() {
   }, [running, canProduce, modal, workflowOpen]);
 
   useEffect(() => {
+    const receiveSnapshot = (event: Event) => {
+      const snapshot = (event as CustomEvent<unknown>).detail;
+      if (!isMachineExpeditionSnapshot(snapshot)) {
+        setNotice("Snapshot da Expedição inválido; os dados foram ignorados.");
+        return;
+      }
+      dispatch({ type: "machine-snapshot", snapshot });
+      setNotice(
+        snapshot.connection === "CONNECTED"
+          ? "Telemetria da Expedição recebida. Simulação local pausada."
+          : `Snapshot recebido com conexão ${snapshot.connection.toLocaleLowerCase("pt-BR")}.`,
+      );
+    };
+    window.addEventListener(SMART40_EXPEDITION_SNAPSHOT_EVENT, receiveSnapshot);
+    return () =>
+      window.removeEventListener(
+        SMART40_EXPEDITION_SNAPSHOT_EVENT,
+        receiveSnapshot,
+      );
+  }, []);
+
+  useEffect(() => {
     if (!notice) return;
     const timeout = window.setTimeout(() => setNotice(""), 4500);
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
   useEffect(() => {
+    if (
+      state.machineSnapshot &&
+      state.machineSnapshot.source !== "simulated"
+    ) {
+      const timer = window.setTimeout(
+        () =>
+          setPersistence(
+            "Telemetria conectada · dados da máquina não são salvos localmente",
+          ),
+        0,
+      );
+      return () => window.clearTimeout(timer);
+    }
     let message =
       "Salvo neste navegador · ao reabrir, a simulação inicia pausada";
     try {
@@ -206,26 +250,38 @@ function App() {
 
   const exportCsv = () => {
     const rows: (string | number)[][] = [
-      ["SMART 4.0 · Grupo 5 · Relatório de demonstração"],
+      ["SMART 4.0 · Grupo 5 · Relatório de Expedição"],
       ["Cenário", scenario],
       ["Atualização", telemetry.timestamp],
-      ["Origem", "Mock local · dados simulados"],
+      ["Origem", dataSourceLabel],
+      ["Conexão", state.machineSnapshot?.connection ?? "LOCAL"],
+      ["Estado da máquina", telemetry.estadoGlobal],
+      ["Modo de operação", telemetry.modoOperacao],
+      ["Velocidade da esteira", telemetry.velocidadeEsteiraAtual],
       ["Indicador", "Valor"],
       ["Total processado", metrics.pecasProcessadasTotal],
       ["Aprovadas", metrics.pecasAprovadasCount],
       ["Rejeitadas", metrics.pecasRejeitadasCount],
       ["Refugo (%)", number(rejectedRate, 2)],
       [
-        "OEE simulado (%)",
+        state.machineSnapshot ? "OEE (%)" : "OEE simulado (%)",
         hasProduction ? number(metrics.oeePercentual, 2) : "Sem amostra",
       ],
       ["Fila de saída", metrics.tamanhoFilaSaida],
       [
-        "Ritmo nominal simulado (peças/min)",
+        state.machineSnapshot
+          ? "Ritmo recebido (peças/min)"
+          : "Ritmo nominal simulado (peças/min)",
         metrics.ritmoProducaoPecasPorMinuto,
       ],
-      ["Disponibilidade simulada (%)", metrics.disponibilidadePercentual],
-      ["Performance simulada (%)", metrics.performancePercentual],
+      [
+        state.machineSnapshot ? "Disponibilidade (%)" : "Disponibilidade simulada (%)",
+        metrics.disponibilidadePercentual,
+      ],
+      [
+        state.machineSnapshot ? "Performance (%)" : "Performance simulada (%)",
+        metrics.performancePercentual,
+      ],
       [
         "Qualidade (%)",
         hasProduction ? number(metrics.qualidadePercentual, 2) : "Sem amostra",
@@ -242,12 +298,12 @@ function App() {
         order.destino,
       ]),
       [],
-      ["Premissas simuladas"],
+      [state.machineSnapshot ? "Tempos e ciclo recebidos" : "Premissas simuladas"],
       ["Tempo planejado (s)", state.oeeInputs.plannedSeconds],
       ["Paradas (s)", state.oeeInputs.stoppedSeconds],
       ["Ciclo ideal (s)", state.oeeInputs.idealCycleSeconds],
       [],
-      ["Prateleira simulada", state.rack.length],
+      [state.machineSnapshot ? "Posições de expedição" : "Prateleira simulada", state.rack.length],
       ["Posição", "Lote", "OP", "Produto", "Peças", "Destino"],
       ...state.rack.map((batch, index) => [
         index + 1,
@@ -258,7 +314,7 @@ function App() {
         batch?.destination ?? "",
       ]),
       [],
-      ["Movimentações simuladas"],
+      [state.machineSnapshot ? "Movimentações recebidas" : "Movimentações simuladas"],
       ["Etapa", "OP", "Peças", "Posição", "Horário"],
       ...state.movements.map((item) => [
         item.stage,
@@ -268,7 +324,7 @@ function App() {
         item.timestamp,
       ]),
       [],
-      ["Saídas simuladas"],
+      [state.machineSnapshot ? "Saídas recebidas" : "Saídas simuladas"],
       ["Lote", "Peças", "Destino", "Horário", "OP", "Posição"],
       ...shipments.map((item) => [
         item.id,
@@ -278,17 +334,58 @@ function App() {
         item.orderCode,
         item.position,
       ]),
+      [],
+      ["Última peça lida"],
+      ["ID", telemetry.ultimaPecaLida.idPeca],
+      ["Lote", telemetry.ultimaPecaLida.codigoLote],
+      ["Leitura em", telemetry.ultimaPecaLida.timestampLeitura],
+      ["Qualidade de superfície", telemetry.ultimaPecaLida.qualidadeSuperficie],
+      ["Inspeção", telemetry.ultimaPecaLida.statusInspecao],
+      [],
+      ["Leituras de telemetria"],
+      ["Tag", "Valor", "Unidade", "Qualidade", "Atualização"],
+      ...(state.machineSnapshot?.readings.map((reading) => [
+        reading.tag,
+        reading.value === null ? "Sem leitura" : String(reading.value),
+        reading.unit ?? "",
+        reading.quality,
+        reading.timestamp ?? "",
+      ]) ?? []),
+      [],
+      ["Saídas digitais"],
+      ["Sinal", "Valor", "Qualidade", "Atualização"],
+      ...(state.machineSnapshot?.digitalOutputs.map((signal) => [
+        signal.label,
+        signal.value === null ? "Sem leitura" : signal.value ? "Ligada" : "Desligada",
+        signal.quality,
+        signal.timestamp ?? "",
+      ]) ?? []),
+      [],
+      ["Atuadores"],
+      ["Atuador", "Posição", "Unidade", "Estado", "Qualidade", "Atualização"],
+      ...(state.machineSnapshot?.actuators.map((actuator) => [
+        actuator.label,
+        actuator.position ?? "Sem leitura",
+        actuator.unit,
+        actuator.status ?? "",
+        actuator.quality,
+        actuator.timestamp ?? "",
+      ]) ?? []),
     ];
     const url = URL.createObjectURL(
       new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" }),
     );
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "smart40-expedicao-demonstracao.csv";
+    anchor.download = state.machineSnapshot
+      ? "smart40-expedicao.csv"
+      : "smart40-expedicao-demonstracao.csv";
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(
-      "Relatório CSV gerado com os indicadores, ordens filtradas e saídas simuladas.",
+      state.machineSnapshot
+        ? "Relatório CSV gerado com dados recebidos da Expedição."
+        : "Relatório CSV gerado com os indicadores, ordens filtradas e saídas simuladas.",
     );
   };
 
@@ -352,7 +449,7 @@ function App() {
             </button>
             <span className="demo-tag">
               <span />
-              AMBIENTE SIMULADO
+              {machineReadOnly ? "TELEMETRIA DA MÁQUINA" : "AMBIENTE SIMULADO"}
             </span>
             <span className="avatar" aria-label="Grupo 5">
               G5
@@ -374,7 +471,11 @@ function App() {
             <div className={`line-status ${canProduce ? "green" : "amber"}`}>
               <span className="status-dot" />
               {canProduce ? "Linha em operação" : "Linha sem produção"}
-              <small>Estado simulado</small>
+              <small>
+                {state.machineSnapshot
+                  ? `${state.machineSnapshot.source} · ${state.machineSnapshot.connection}`
+                  : "Estado simulado"}
+              </small>
             </div>
           </section>
 
@@ -383,35 +484,50 @@ function App() {
             aria-label="Controles da demonstração"
           >
             <div className="simulation-select">
-              <label htmlFor="scenario">CENÁRIO DE DEMONSTRAÇÃO</label>
+              <label htmlFor="scenario">
+                {machineReadOnly ? "FONTE DE TELEMETRIA" : "CENÁRIO DE DEMONSTRAÇÃO"}
+              </label>
               <select
                 id="scenario"
                 value={scenario}
+                disabled={machineReadOnly}
                 onChange={(event) => chooseScenario(event.target.value)}
               >
+                {!telemetryScenarios[scenario] && (
+                  <option value={scenario}>{scenario}</option>
+                )}
                 {Object.keys(telemetryScenarios).map((name) => (
                   <option key={name}>{name}</option>
                 ))}
               </select>
             </div>
             <p>
-              {scenarioDescriptions[scenario]}
+              {machineReadOnly
+                ? `${dataSourceLabel} · unidade ${state.machineSnapshot?.unitId} · ativo ${state.machineSnapshot?.assetId}`
+                : scenarioDescriptions[scenario] ??
+                  "Dados recebidos pela integração da SPA."}
               <small>
-                Trocar cenário substitui ordens, posições e dados salvos.
+                {machineReadOnly
+                  ? `Último snapshot: ${state.machineSnapshot?.timestamp}. A tela está em modo somente leitura.`
+                  : "Trocar cenário substitui ordens, posições e dados salvos."}
               </small>
             </p>
             <div className="simulation-actions">
               <button
                 className="button primary"
-                disabled={!canProduce}
+                disabled={machineReadOnly || !canProduce}
                 onClick={() => dispatch({ type: "toggle" })}
               >
                 <Icon name={running ? "pause" : "play"} size={15} />
-                {running ? "Pausar" : "Iniciar simulação"}
+                {machineReadOnly
+                  ? "Telemetria conectada"
+                  : running
+                    ? "Pausar"
+                    : "Iniciar simulação"}
               </button>
               <button
                 className="button"
-                disabled={!canProduce || running}
+                disabled={machineReadOnly || !canProduce || running}
                 onClick={() =>
                   dispatch({
                     type: "piece",
@@ -459,7 +575,9 @@ function App() {
             <article className="oee-card">
               <div className="card-heading">
                 <span className="eyebrow">EFICIÊNCIA GLOBAL</span>
-                <span className="subtle-tag">SIMULADO</span>
+                <span className="subtle-tag">
+                  {state.machineSnapshot ? "DADO RECEBIDO" : "SIMULADO"}
+                </span>
               </div>
               <div className="oee-body">
                 <div
@@ -475,7 +593,7 @@ function App() {
                       {hasProduction ? number(metrics.oeePercentual, 1) : "—"}
                       {hasProduction && <small>%</small>}
                     </strong>
-                    <span>OEE DO CENÁRIO</span>
+                    <span>{state.machineSnapshot ? "OEE RECEBIDO" : "OEE DO CENÁRIO"}</span>
                   </div>
                 </div>
                 <div className="oee-summary">
@@ -495,7 +613,9 @@ function App() {
                 </div>
               </div>
               <div className="oee-foot">
-                Valores de demonstração, sem leitura da planta.
+                {state.machineSnapshot
+                  ? `Origem ${state.machineSnapshot.source} · ${state.machineSnapshot.connection}`
+                  : "Valores de demonstração, sem leitura da planta."}
               </div>
             </article>
             <div className="metric-grid">
@@ -531,7 +651,7 @@ function App() {
               <MetricCard
                 label="RITMO NOMINAL"
                 value={number(metrics.ritmoProducaoPecasPorMinuto)}
-                detail="peças/min · parâmetro simulado"
+                detail={state.machineSnapshot ? "peças/min · telemetria" : "peças/min · parâmetro simulado"}
                 icon="trend"
                 tone="amber"
               />
@@ -562,7 +682,9 @@ function App() {
               <div className="formula-note">
                 <Icon name="info" size={15} />
                 <span>
-                  D usa tempos simulados; P usa ciclo ideal e total. Q =
+                  {state.machineSnapshot
+                    ? "Componentes de OEE recebidos pela telemetria. "
+                    : "D usa tempos simulados; P usa ciclo ideal e total. "}Q =
                   aprovadas ÷ total. OEE = D × P × Q.
                 </span>
               </div>
@@ -643,7 +765,7 @@ function App() {
                 <summary>Ver valores do gráfico</summary>
                 <table>
                   <caption className="sr-only">
-                    Produção simulada por hora
+                    Produção por hora
                   </caption>
                   <thead>
                     <tr>
@@ -805,7 +927,7 @@ function App() {
             <div className="table-scroll">
               <table>
                 <caption className="sr-only">
-                  Ordens simuladas do Grupo 5
+                  Ordens da Expedição
                 </caption>
                 <thead>
                   <tr>
@@ -884,8 +1006,7 @@ function App() {
             </div>
             <div className="table-foot">
               <span>
-                {visibleOrders.length} de {orders.length} ordens · dados
-                simulados
+                {visibleOrders.length} de {orders.length} ordens · {dataSourceLabel}
               </span>
               <span>
                 ÚLTIMA PEÇA <strong>{telemetry.ultimaPecaLida.idPeca}</strong> ·{" "}
@@ -898,7 +1019,7 @@ function App() {
 
           <section className="panel shipments-panel" id="saidas">
             <PanelTitle
-              eyebrow="REGISTRO LOCAL DA DEMONSTRAÇÃO"
+              eyebrow={state.machineSnapshot ? "REGISTRO DA EXPEDIÇÃO" : "REGISTRO LOCAL DA DEMONSTRAÇÃO"}
               title="Histórico de saídas"
               aside={
                 <span className="shipment-total">
@@ -930,7 +1051,9 @@ function App() {
                     <div>
                       <strong>
                         {shipment.id}{" "}
-                        <span className="subtle-tag">SAÍDA SIMULADA</span>
+                        <span className="subtle-tag">
+                          {state.machineSnapshot ? "SAÍDA RECEBIDA" : "SAÍDA SIMULADA"}
+                        </span>
                       </strong>
                       <p>
                         {shipment.orderCode} · {shipment.product} ·{" "}
@@ -951,7 +1074,9 @@ function App() {
               <strong>SMART 4.0</strong> · Grupo 5 / Expedição & OEE
             </span>
             <span>
-              Protótipo · Grupo 5 · mock local · dados salvos neste navegador
+              {state.machineSnapshot
+                ? `SPA · Grupo 5 · ${dataSourceLabel}`
+                : "Protótipo · Grupo 5 · mock local · dados salvos neste navegador"}
             </span>
           </footer>
         </main>

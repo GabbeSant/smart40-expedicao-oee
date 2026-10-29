@@ -32,6 +32,9 @@ export function LogisticsPanel({
   const [error, setError] = useState("");
   const [showAllEvents, setShowAllEvents] = useState(false);
   const pallet = state.telemetry.dadosExpedicao.palete;
+  const machineSnapshot = state.machineSnapshot;
+  const machineReadOnly =
+    !!machineSnapshot && machineSnapshot.source !== "simulated";
   const selectedBatch = state.rack[selected];
   const occupied = state.rack.filter(Boolean).length;
   const stopped = state.telemetry.estadoGlobal !== "EM_EXECUCAO";
@@ -44,8 +47,16 @@ export function LogisticsPanel({
     onDialogChange(!!value);
   };
   const close = () => open(null);
+  const blockMachineWrite = () => {
+    if (!machineReadOnly) return false;
+    const message = "Dados recebidos em modo somente leitura; a SPA não enviou comandos à máquina.";
+    setError(message);
+    notify(message);
+    return true;
+  };
   const createOrder = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (blockMachineWrite()) return;
     const form = new FormData(event.currentTarget);
     const draft = {
       codigo: String(form.get("codigo")).trim().toUpperCase(),
@@ -64,6 +75,7 @@ export function LogisticsPanel({
   };
   const saveOee = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (blockMachineWrite()) return;
     const form = new FormData(event.currentTarget);
     const inputs = {
       plannedSeconds: Number(form.get("planned")) * 60,
@@ -83,6 +95,7 @@ export function LogisticsPanel({
   };
   const resizeRack = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (blockMachineWrite()) return;
     const capacity = Number(new FormData(event.currentTarget).get("capacity"));
     if (state.rack.slice(capacity).some(Boolean)) {
       setError(
@@ -96,6 +109,7 @@ export function LogisticsPanel({
     notify(`Armazenamento configurado para ${capacity} posições simuladas.`);
   };
   const store = () => {
+    if (blockMachineWrite()) return;
     const position = state.rack.indexOf(null);
     dispatch({ type: "release", timestamp: new Date().toISOString() });
     setSelected(position);
@@ -103,7 +117,7 @@ export function LogisticsPanel({
     notify(`${pallet.codigo} armazenado na posição ${position + 1}.`);
   };
   const ship = () => {
-    if (!selectedBatch) return;
+    if (!selectedBatch || blockMachineWrite()) return;
     dispatch({
       type: "ship",
       position: selected,
@@ -128,13 +142,13 @@ export function LogisticsPanel({
           <h2 id="logistics-title">Mapa da expedição</h2>
         </div>
         <div className="logistics-actions">
-          <button className="button primary" onClick={() => open("order")}>
+          <button className="button primary" disabled={machineReadOnly} onClick={() => open("order")}>
             + Nova OP
           </button>
-          <button className="button" onClick={() => open("oee")}>
+          <button className="button" disabled={machineReadOnly} onClick={() => open("oee")}>
             Premissas do OEE
           </button>
-          <button className="button" onClick={() => open("capacity")}>
+          <button className="button" disabled={machineReadOnly} onClick={() => open("capacity")}>
             Configurar posições
           </button>
         </div>
@@ -144,6 +158,11 @@ export function LogisticsPanel({
         mesma OP e destino. Configuração didática; não representa uma medição
         oficial da planta.
       </p>
+      <nav className="station-nav" aria-label="Seções da estação de expedição">
+        <a href="#expedition-positions">Posições e saídas</a>
+        <a href="#expedition-digital-outputs">Saídas digitais</a>
+        <a href="#expedition-actuators">Atuadores</a>
+      </nav>
       <div className="process-flow" aria-label="Etapas da expedição">
         <div className={`process-step ${pallet.pecas ? "current" : ""}`}>
           <span className="step-number">01</span>
@@ -176,7 +195,7 @@ export function LogisticsPanel({
           </small>
           <button
             className="button"
-            disabled={!pallet.pecas || !!state.receipt.identifiedAt || stopped}
+            disabled={machineReadOnly || !pallet.pecas || !!state.receipt.identifiedAt || stopped}
             onClick={() => {
               dispatch({
                 type: "identify",
@@ -205,6 +224,7 @@ export function LogisticsPanel({
             className="button"
             disabled={
               !pallet.pecas ||
+              machineReadOnly ||
               !state.receipt.identifiedAt ||
               occupied === state.rack.length ||
               stopped
@@ -230,7 +250,7 @@ export function LogisticsPanel({
           permanece preservada.
         </div>
       )}
-      <div className="warehouse-grid">
+      <div className="warehouse-grid" id="expedition-positions">
         <div className="rack-area">
           <div className="rack-title">
             <span>PRATELEIRA SIMULADA</span>
@@ -290,7 +310,7 @@ export function LogisticsPanel({
               </dl>
               <button
                 className="button primary"
-                disabled={stopped}
+                disabled={stopped || machineReadOnly}
                 onClick={() => open("ship")}
               >
                 Simular expedição →
@@ -396,6 +416,119 @@ export function LogisticsPanel({
           )}
         </ol>
       )}
+      <section
+        className="station-status-section"
+        id="expedition-digital-outputs"
+        aria-labelledby="digital-outputs-title"
+      >
+        <div className="station-section-heading">
+          <div>
+            <div className="eyebrow">INTERFACE COM A ESTAÇÃO</div>
+            <h3 id="digital-outputs-title">Saídas digitais</h3>
+          </div>
+          <span className="station-connection-state">
+            {machineSnapshot
+              ? `${machineSnapshot.source} · ${machineSnapshot.connection}`
+              : "Aguardando integração"}
+          </span>
+        </div>
+        <p className="station-integration-note">
+          {machineSnapshot
+            ? `Origem: ${machineSnapshot.source} · atualização ${date(machineSnapshot.timestamp)} · ${machineSnapshot.readings.filter((reading) => reading.quality === "GOOD").length}/${machineSnapshot.readings.length} leituras GOOD. Saídas somente para visualização.`
+            : "Sinais preparados para telemetria da IHM. Aguardando snapshot da máquina; nenhum estado foi presumido."}
+        </p>
+        <div className="station-signal-grid">
+          {(machineSnapshot?.digitalOutputs ?? [
+            "Avança manipulador",
+            "Liga vácuo",
+            "Motor esteira 1",
+            "Motor esteira 2",
+            "Stopper 1",
+            "Stopper 2",
+            "Saída de processo",
+          ].map((label, index) => ({
+            id: `output-${index + 1}`,
+            label,
+            value: null,
+            quality: "BAD" as const,
+            timestamp: null,
+          }))
+          ).map((signal) => (
+            <div
+              className={`station-signal ${signal.quality !== "GOOD" || signal.value === null ? "unavailable" : signal.value ? "active" : "inactive"}`}
+              key={signal.id}
+              title={signal.timestamp ? `Atualizado: ${date(signal.timestamp)} · Qualidade: ${signal.quality}` : `Qualidade: ${signal.quality}`}
+            >
+              <span className="station-signal-indicator" aria-hidden="true" />
+              <strong>{signal.label}</strong>
+              <small>
+                {signal.quality !== "GOOD" || signal.value === null
+                  ? "Leitura não confiável"
+                  : signal.value
+                    ? "Ligada"
+                    : "Desligada"}
+                {` · ${signal.quality}`}
+              </small>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section
+        className="station-status-section"
+        id="expedition-actuators"
+        aria-labelledby="actuators-title"
+      >
+        <div className="station-section-heading">
+          <div>
+            <div className="eyebrow">MOVIMENTOS DA ESTAÇÃO</div>
+            <h3 id="actuators-title">Atuadores</h3>
+          </div>
+          <span className="station-connection-state">
+            {machineSnapshot
+              ? `${machineSnapshot.actuators.length} sinais · ${machineSnapshot.connection}`
+              : "Aguardando telemetria"}
+          </span>
+        </div>
+        <p className="station-integration-note">
+          {machineSnapshot
+            ? `Origem: ${machineSnapshot.source} · valores recebidos são somente para visualização. Comandos de movimento não são enviados por esta tela.`
+            : "Posições, estados e unidades preparados para receber telemetria. Os comandos de movimento permanecem desabilitados."}
+        </p>
+        <div className="station-actuator-grid">
+          {(machineSnapshot?.actuators ?? [
+            { id: "vertical", label: "Atuador vertical", unit: "mm" },
+            { id: "horizontal", label: "Atuador horizontal", unit: "mm" },
+            { id: "rotary", label: "Atuador giratório", unit: "°" },
+          ].map((actuator) => ({
+            ...actuator,
+            position: null,
+            status: null,
+            quality: "BAD" as const,
+            timestamp: null,
+          }))
+          ).map((actuator) => (
+            <article className="station-actuator" key={actuator.id}>
+              <h4>{actuator.label}</h4>
+              <dl>
+                <dt>Posição atual</dt>
+                <dd>
+                  {actuator.position === null
+                    ? "—"
+                    : `${format(actuator.position)} ${actuator.unit}`}
+                </dd>
+                <dt>Estado</dt>
+                <dd>{actuator.status ?? "Sem leitura"}</dd>
+                <dt>Qualidade</dt>
+                <dd>{actuator.quality}</dd>
+              </dl>
+              <div className="station-jog-controls" aria-label="Comandos indisponíveis">
+                <button type="button" className="button" disabled>JOG −</button>
+                <button type="button" className="button" disabled>JOG +</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
       {modal && (
         <Modal
           fallbackFocusId={`rack-position-${selected}`}

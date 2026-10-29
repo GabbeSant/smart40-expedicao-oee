@@ -67,16 +67,61 @@ export function isTelemetriaSmart40(
   if (!value || typeof value !== "object") return false;
   const telemetry = value as Partial<TelemetriaSmart40>;
   const metrics = telemetry.metricasExpedicao;
+  const orders = telemetry.dadosExpedicao?.ordens;
+  const pallet = telemetry.dadosExpedicao?.palete;
+  const piece = telemetry.ultimaPecaLida;
+  const finite = (candidate: unknown) =>
+    typeof candidate === "number" && Number.isFinite(candidate) && candidate >= 0;
+  const count = (candidate: unknown) =>
+    finite(candidate) && Number.isSafeInteger(candidate);
   return Boolean(
     typeof telemetry.timestamp === "string" &&
+    Number.isFinite(Date.parse(telemetry.timestamp)) &&
+    ["PRONTA", "EM_EXECUCAO", "PARADA_EMERGENCIA"].includes(
+      String(telemetry.estadoGlobal),
+    ) &&
+    ["MANUAL", "AUTOMATICO", "MANUTENCAO"].includes(
+      String(telemetry.modoOperacao),
+    ) &&
+    finite(telemetry.velocidadeEsteiraAtual) &&
+    piece &&
+    typeof piece.idPeca === "string" &&
+    typeof piece.codigoLote === "string" &&
+    typeof piece.timestampLeitura === "string" &&
+    Number.isFinite(Date.parse(piece.timestampLeitura)) &&
+    finite(piece.qualidadeSuperficie) &&
+    ["APROVADA", "REJEITADA"].includes(String(piece.statusInspecao)) &&
     metrics &&
-    typeof metrics.pecasProcessadasTotal === "number" &&
-    typeof metrics.pecasAprovadasCount === "number" &&
-    typeof metrics.pecasRejeitadasCount === "number" &&
-    typeof metrics.tamanhoFilaSaida === "number" &&
-    typeof metrics.ritmoProducaoPecasPorMinuto === "number" &&
-    typeof metrics.oeePercentual === "number" &&
+    count(metrics.pecasProcessadasTotal) &&
+    count(metrics.pecasAprovadasCount) &&
+    count(metrics.pecasRejeitadasCount) &&
+    metrics.pecasAprovadasCount + metrics.pecasRejeitadasCount ===
+      metrics.pecasProcessadasTotal &&
+    count(metrics.tamanhoFilaSaida) &&
+    finite(metrics.ritmoProducaoPecasPorMinuto) &&
+    finite(metrics.oeePercentual) &&
+    finite(metrics.disponibilidadePercentual) &&
+    finite(metrics.performancePercentual) &&
+    finite(metrics.qualidadePercentual) &&
     telemetry.dadosExpedicao &&
-    Array.isArray(telemetry.dadosExpedicao.ordens),
+    Array.isArray(orders) &&
+    orders.every(
+      (order) =>
+        typeof order.codigo === "string" &&
+        typeof order.produto === "string" &&
+        typeof order.destino === "string" &&
+        count(order.meta) &&
+        order.meta > 0 &&
+        count(order.produzido) &&
+        order.produzido <= order.meta &&
+        ["ATIVA", "AGUARDANDO", "FINALIZADA"].includes(String(order.status)),
+    ) &&
+    pallet &&
+    typeof pallet.codigo === "string" &&
+    typeof pallet.destino === "string" &&
+    count(pallet.pecas) &&
+    count(pallet.capacidade) &&
+    pallet.capacidade > 0 &&
+    pallet.pecas <= pallet.capacidade,
   );
 }

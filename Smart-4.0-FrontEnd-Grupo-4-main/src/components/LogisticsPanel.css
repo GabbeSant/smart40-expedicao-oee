@@ -12,6 +12,145 @@
   color: #a9bdd5;
   margin: -8px 0 22px;
 }
+.station-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+  border-bottom: 1px solid #2b3c51;
+}
+.station-nav a {
+  color: #b8cde3;
+  font-size: 11px;
+  text-decoration: none;
+  padding: 9px 12px;
+  border: 1px solid #3b526e;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+}
+.station-nav a:hover,
+.station-nav a:focus-visible {
+  color: #e2efff;
+  background: #203a50;
+}
+.station-status-section {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid #2b3c51;
+  border-radius: 8px;
+  background: #0d1723;
+  scroll-margin-top: 18px;
+}
+.station-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.station-section-heading h3 {
+  margin: 5px 0 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+.station-connection-state {
+  color: #edcf93;
+  background: #352d21;
+  border: 1px solid #66512d;
+  border-radius: 20px;
+  padding: 6px 10px;
+  font-size: 10px;
+}
+.station-integration-note {
+  color: #a9bdd6;
+  font-size: 11px;
+  line-height: 1.7;
+  max-width: 760px;
+}
+.station-signal-grid,
+.station-actuator-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.station-signal,
+.station-actuator {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #304861;
+  border-radius: 6px;
+  background: #142233;
+}
+.station-signal {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px 9px;
+}
+.station-signal-indicator {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #718096;
+  grid-row: span 2;
+}
+.station-signal.active .station-signal-indicator {
+  background: #77d95a;
+  box-shadow: 0 0 8px #77d95a66;
+}
+.station-signal.inactive .station-signal-indicator {
+  background: #718096;
+}
+.station-signal.unavailable .station-signal-indicator {
+  background: #d3a94f;
+}
+.station-signal strong {
+  font-size: 11px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.station-signal small {
+  color: #91abc6;
+  font-size: 9px;
+}
+.station-actuator-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.station-actuator h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+.station-actuator dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin: 14px 0;
+  font-size: 10px;
+}
+.station-actuator dt {
+  color: #91abc6;
+}
+.station-actuator dd {
+  margin: 0;
+  color: #d3e2f2;
+}
+.station-jog-controls {
+  display: flex;
+  gap: 8px;
+}
+.station-jog-controls .button {
+  flex: 1;
+  font-size: 10px;
+}
+.station-jog-controls .button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.warehouse-grid,
+.station-status-section {
+  scroll-margin-top: 16px;
+}
 .process-flow {
   display: grid;
   grid-template-columns: 1fr 20px 1fr 20px 1fr 20px 1fr;
@@ -448,6 +587,16 @@
   }
   .layout-premise {
     font-size: 10px;
+  }
+  .station-signal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .station-actuator-grid {
+    grid-template-columns: 1fr;
+  }
+  .station-nav a {
+    flex: 1;
+    text-align: center;
   }
   .logistics-actions .button:last-child {
     flex-basis: 100%;

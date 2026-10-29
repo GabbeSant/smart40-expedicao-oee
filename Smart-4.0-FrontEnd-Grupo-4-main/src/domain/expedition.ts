@@ -12,6 +12,7 @@ import {
   type OeeInputs,
 } from "./warehouse.ts";
 import type { TelemetriaSmart40 } from "../types/smart40";
+import type { MachineExpeditionSnapshot } from "../integration/expedition";
 
 export interface Shipment {
   id: string;
@@ -24,12 +25,14 @@ export interface Shipment {
 }
 export interface SimulationState extends WarehouseState {
   telemetry: TelemetriaSmart40;
+  machineSnapshot: MachineExpeditionSnapshot | null;
   scenario: string;
   running: boolean;
   steps: number;
   shipments: Shipment[];
 }
 export type SimulationAction =
+  | { type: "machine-snapshot"; snapshot: MachineExpeditionSnapshot }
   | { type: "scenario"; name: string; telemetry: TelemetriaSmart40 }
   | { type: "toggle" }
   | { type: "piece"; timestamp: string }
@@ -46,6 +49,7 @@ export function createSimulation(
 ): SimulationState {
   const state: SimulationState = {
     telemetry: structuredClone(telemetry),
+    machineSnapshot: null,
     scenario,
     running: false,
     steps: 0,
@@ -60,9 +64,29 @@ export function simulationReducer(
   state: SimulationState,
   action: SimulationAction,
 ): SimulationState {
+  if (action.type === "machine-snapshot") {
+    const snapshot = structuredClone(action.snapshot);
+    return {
+      ...state,
+      telemetry: snapshot.telemetry,
+      rack: snapshot.warehouse.rack,
+      queue: snapshot.warehouse.queue,
+      receipt: snapshot.warehouse.receipt,
+      movements: snapshot.warehouse.movements,
+      shipments: snapshot.warehouse.shipments,
+      oeeInputs: snapshot.warehouse.oeeInputs,
+      machineSnapshot: snapshot,
+      scenario: snapshot.source === "simulated" ? "Simulação integrada" : "Expedição conectada",
+      running: false,
+    };
+  }
   if (action.type === "scenario")
     return createSimulation(action.telemetry, action.name);
-  if (action.type === "toggle") return { ...state, running: !state.running };
+  if (action.type === "toggle") {
+    if (state.machineSnapshot && state.machineSnapshot.source !== "simulated")
+      return state;
+    return { ...state, running: !state.running };
+  }
   if (action.type === "identify") return identifyBatch(state, action.timestamp);
   if (action.type === "release") return storeBatch(state, action.timestamp);
   if (action.type === "ship")
