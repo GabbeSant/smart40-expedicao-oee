@@ -4,6 +4,8 @@ Protótipo independente do **Grupo 5**, preparado para a aula 2. React, TypeScri
 
 Todos os indicadores, ordens, lotes e saídas são simulados. Nenhum comando é enviado à planta. Os dados são salvos neste navegador e restaurados com a simulação pausada. Reiniciar ou trocar de cenário substitui os dados salvos.
 
+A camada isolada em `src/integration` prepara a leitura de ordens da Planta N2 por GET, com adapter parcial e fallback mock identificado. Seu consumo é explícito; a interface continua usando a simulação. Veja [a análise, os mapeamentos e o uso da integração](docs/integracao-production-orders.md).
+
 ## Rodar
 
 Use **Node.js 24 LTS** e npm. O projeto utiliza o suporte nativo do Node a TypeScript nos testes; o requisito antigo de Node 18 nos guias não corresponde à base Vite atual.
@@ -43,6 +45,8 @@ npm run build
 
 Os testes verificam conservação dos contadores, coerência do histórico/OEE, paletização, rejeição, conclusão de ordens, reinício e geração de CSV.
 
+Os testes de integração verificam o JSON real salvo, payloads incompletos, campos desconhecidos, mapeamentos parciais e fallback em falhas de rede/HTTP/timeout. As respostas de rede são controladas nos testes; eles não consultam a planta.
+
 ## Organização
 
 | Arquivo | Responsabilidade |
@@ -56,8 +60,15 @@ Os testes verificam conservação dos contadores, coerência do histórico/OEE, 
 | `src/domain/persistence.ts` | Salvamento versionado e validação de sessões |
 | `src/components/LogisticsPanel.tsx` | Mapa 2D, cadastro e formulários |
 | `src/types/smart40.ts` | Tipos do protótipo local |
+| `src/integration/productionOrdersApi.ts` | DTOs, validação e cliente somente GET |
+| `src/integration/productionOrdersSource.ts` | Porta de leitura com API optativa e fallback mock |
+| `src/adapters/productionOrderAdapter.ts` | Campos internos seguros, pendências e original preservado |
+| `src/integration/appShellContracts.ts` | Contrato externo preliminar, sem conexão com o Shell |
 | `tests/expedition.test.ts` | Verificação da lógica |
 | `tests/warehouse.test.ts` | Fluxo completo, vínculos e persistência |
+| `tests/productionOrdersApi.test.ts` | Payload real, GET, validação e falhas |
+| `tests/productionOrderAdapter.test.ts` | Mapeamentos parciais e campos não mapeados |
+| `tests/productionOrdersSource.test.ts` | Origem dos dados, fallback e isolamento |
 
 Veja [o blueprint dos dados](docs/blueprint-dados.md), [o plano de evolução](docs/plano-implementacao.md) e [o roteiro de apresentação](docs/roteiro-apresentacao.md).
 

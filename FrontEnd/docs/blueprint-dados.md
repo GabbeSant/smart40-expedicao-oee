@@ -2,7 +2,7 @@
 
 ## Origem e modelo
 
-Os cenários em `src/mocks/telemetryMock.ts` são demonstrações locais. Não há API, servidor, WebSocket ou consumo do Shell. `TelemetriaSmart40` é o modelo da interface local; o contrato preliminar em `contrato-smart40-v0.1.ts` permanece reservado para a futura integração e não é tratado como equivalente.
+Os cenários em `src/mocks/telemetryMock.ts` são demonstrações locais. A interface continua consumindo somente a simulação/sessão local. A camada isolada em `src/integration` disponibiliza leitura optativa por GET de ordens reais, com adapter parcial e fallback mock; não há WebSocket ou consumo do Shell. `TelemetriaSmart40` é o modelo da interface local; os contratos externos preliminares permanecem distintos e não são tratados como equivalentes. Veja [a integração de ordens e seus limites](integracao-production-orders.md).
 
 `SimulationState` contém telemetria, ordens, lote em recebimento, fila por ordem, prateleira, saídas, movimentações e premissas do OEE. O reducer atualiza o conjunto de forma atômica; suas funções não alteram o estado anterior.
 
