@@ -1,0 +1,14 @@
+/* Tokens do tema SMART 4.0 fornecido pelo professor, mantidos no codigo versionado.
+   O tema completo de referencia fica em docs/SMART40FFE/theme.css. */
+:root {
+  --smart-bg-app: #0f172a;
+  --smart-bg-surface: #1e293b;
+  --smart-accent-primary: #0284c7;
+  --smart-status-ok: #22c55e;
+  --smart-status-warning: #f59e0b;
+  --smart-status-danger: #ef4444;
+  --smart-text-primary: #f8fafc;
+  --smart-text-secondary: #94a3b8;
+  --smart-border-color: #334155;
+  --smart-radius-md: 8px;
+}

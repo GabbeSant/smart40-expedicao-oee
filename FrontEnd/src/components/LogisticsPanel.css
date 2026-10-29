@@ -1,0 +1,539 @@
+.logistics-panel {
+  margin-top: 16px;
+}
+.logistics-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.layout-premise {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #a9bdd5;
+  margin: -8px 0 22px;
+}
+.process-flow {
+  display: grid;
+  grid-template-columns: 1fr 20px 1fr 20px 1fr 20px 1fr;
+  gap: 10px;
+  padding: 18px;
+  background: #0d1723;
+  border: 1px solid #2b3c51;
+  border-radius: 8px;
+}
+.process-step {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.step-number {
+  font-size: 10px;
+  color: #819ab6;
+  border: 1px solid #3b526e;
+  border-radius: 50%;
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+}
+.process-step.current .step-number {
+  background: #224462;
+  color: #bcdeff;
+  border-color: #5485b0;
+}
+.process-step > strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.process-step > small {
+  font-size: 10px;
+  color: #a3b9d1;
+  line-height: 1.5;
+}
+.process-step .button {
+  font-size: 10px;
+  margin-top: auto;
+}
+.flow-arrow {
+  color: #6583a3;
+  align-self: center;
+  font-size: 19px;
+}
+.step-hint {
+  color: #9bb3cc;
+  font-size: 10px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.conveyor-mini {
+  display: flex;
+  gap: 6px;
+  border-top: 3px solid #557c9f;
+  border-bottom: 3px solid #557c9f;
+  padding: 5px 3px;
+  width: 90%;
+  margin-top: auto;
+}
+.conveyor-mini i {
+  background: #365573;
+  width: 18px;
+  height: 8px;
+  border-radius: 3px;
+}
+.warehouse-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 24px;
+  margin-top: 23px;
+}
+.rack-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #9cb4d0;
+  font-size: 9px;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+.rack-title > span:last-child {
+  letter-spacing: 0;
+}
+.rack-title .neutral {
+  color: #4c627b;
+  margin-left: 9px;
+}
+.rack-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  border-bottom: 5px solid #354b63;
+  padding-bottom: 9px;
+}
+.rack-slot {
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 13px 6px 11px;
+  background: #101d2b;
+  border: 1px dashed #40556c;
+  border-radius: 6px;
+  color: #9ab1ca;
+  min-height: 105px;
+}
+.rack-slot.occupied {
+  background: #203a50;
+  border: 1px solid #507b9c;
+  color: #baddfa;
+}
+.rack-slot.selected {
+  outline: 2px solid #a5d1ff;
+  outline-offset: 2px;
+}
+.rack-slot:hover {
+  background: #263d53;
+}
+.slot-address {
+  position: absolute;
+  left: 8px;
+  top: 7px;
+  font-size: 9px;
+  color: #8fabc6;
+}
+.slot-crate {
+  font-size: 23px;
+  line-height: 1.2;
+  color: #76a9d6;
+  margin-top: 2px;
+}
+.rack-slot > strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  font-weight: 500;
+}
+.rack-slot > small {
+  font-size: 9px;
+}
+.rack-note {
+  font-size: 10px;
+  color: #99b0ca;
+  line-height: 1.6;
+  margin: 12px 0 0;
+}
+.slot-details {
+  padding: 20px;
+  background: #142233;
+  border: 1px solid #304861;
+  border-radius: 8px;
+  align-self: start;
+  min-width: 0;
+}
+.slot-details h3 {
+  overflow-wrap: anywhere;
+  font-size: 20px;
+  font-weight: 500;
+  margin: 10px 0 13px;
+  letter-spacing: -0.5px;
+}
+.slot-details p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #acbfd6;
+}
+.slot-details dl {
+  display: grid;
+  grid-template-columns: 85px minmax(0, 1fr);
+  gap: 11px 12px;
+  font-size: 11px;
+  margin: 18px 0;
+}
+.slot-details dt {
+  color: #91abc6;
+}
+.slot-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.slot-details .button {
+  margin-top: 8px;
+  width: 100%;
+}
+.receipt-detail {
+  border-top: 1px solid #3a4b60;
+  margin-top: 18px;
+  padding-top: 16px;
+}
+.receipt-detail > span {
+  display: block;
+  color: #9fb4cc;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+}
+.receipt-detail > strong {
+  display: block;
+  margin: 9px 0 0;
+  font-size: 15px;
+}
+.receipt-detail p {
+  margin: 5px 0;
+}
+.batch-queue {
+  margin-top: 18px;
+  padding: 13px 15px;
+  background: #2c281e;
+  border: 1px solid #5b4c2e;
+  border-radius: 6px;
+  color: #dec69c;
+  font-size: 11px;
+}
+.batch-queue > div {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.batch-queue span {
+  font-size: 10px;
+  padding: 5px 8px;
+  background: #3b3425;
+  border-radius: 4px;
+}
+.warehouse-warning {
+  padding: 12px 15px;
+  margin-top: 15px;
+  color: #edcf93;
+  background: #352d21;
+  border: 1px solid #66512d;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.oee-explanation {
+  margin-top: 20px;
+  color: #abc8e7;
+  font-size: 11px;
+  border-top: 1px solid #2d4055;
+  padding-top: 15px;
+}
+.oee-explanation p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #a9bdd6;
+  margin: 10px 0;
+}
+.oee-explanation strong {
+  color: #d8e9fa;
+}
+.movement-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+}
+.movement-heading h3 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.movement-heading button {
+  font-size: 10px;
+}
+.movement-log {
+  padding: 0;
+  margin: 12px 0 0;
+  list-style: none;
+  max-height: 320px;
+  overflow: auto;
+}
+.movement-log li {
+  display: grid;
+  grid-template-columns: 100px 85px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid #293c51;
+  font-size: 10px;
+  color: #b1c8df;
+}
+.movement-log strong {
+  font-weight: 500;
+}
+.movement-log time {
+  font-size: 9px;
+  color: #90a9c3;
+}
+.movement-stage {
+  font-size: 9px;
+  color: #adcae8;
+}
+.stage-identificado {
+  color: #b9aaff;
+}
+.stage-armazenado {
+  color: #91c7fa;
+}
+.stage-expedido {
+  color: #71d9b4;
+}
+.workflow-form {
+  display: grid;
+  gap: 15px;
+}
+.workflow-form p {
+  margin: 0;
+}
+.workflow-form label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  color: #b8cde3;
+}
+.workflow-form input,
+.workflow-form select {
+  padding: 10px 12px;
+  border: 1px solid #4a6179;
+  border-radius: 5px;
+  background: #0d1a29;
+  color: #e2efff;
+  width: 100%;
+  min-width: 0;
+  min-height: 41px;
+}
+.form-columns {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 12px;
+}
+.workflow-form .modal-actions {
+  margin-top: 8px;
+}
+.form-error {
+  color: #ffc0c5 !important;
+  border-left: 2px solid #f58695;
+  background: #402b34;
+  padding: 10px;
+  font-size: 12px;
+}
+.persistence-note {
+  font-size: 9px;
+  color: #9cbbd6;
+  padding-top: 7px;
+}
+.persistence-note.error {
+  color: #ffc0c5;
+}
+@media (max-width: 1100px) {
+  .logistics-panel > .panel-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .process-flow {
+    gap: 7px;
+    padding: 14px;
+  }
+  .process-step .button {
+    white-space: normal;
+  }
+  .warehouse-grid {
+    grid-template-columns: 1.3fr 1fr;
+  }
+  .movement-log li {
+    grid-template-columns: 85px 75px 1fr;
+  }
+  .movement-log time {
+    grid-column: 2/-1;
+  }
+}
+@media (max-width: 620px) {
+  .logistics-actions {
+    width: 100%;
+    gap: 6px;
+  }
+  .logistics-actions .button {
+    font-size: 10px;
+    flex: 1;
+  }
+  .process-flow {
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 14px;
+  }
+  .flow-arrow {
+    display: none;
+  }
+  .process-step {
+    min-height: 130px;
+  }
+  .process-step > strong {
+    font-size: 11px;
+  }
+  .warehouse-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .rack-slot {
+    padding: 13px 4px 9px;
+    min-height: 92px;
+  }
+  .slot-address {
+    left: 5px;
+  }
+  .rack-slot > strong {
+    font-size: 10px;
+  }
+  .rack-slot > small {
+    font-size: 8px;
+  }
+  .rack-title {
+    font-size: 8px;
+  }
+  .slot-details {
+    padding: 16px;
+  }
+  .form-columns {
+    grid-template-columns: 1fr;
+  }
+  .movement-log li {
+    grid-template-columns: 80px 65px 1fr;
+    gap: 7px;
+    font-size: 9px;
+  }
+  .movement-log time {
+    font-size: 8px;
+  }
+  .layout-premise {
+    font-size: 10px;
+  }
+  .logistics-actions .button:last-child {
+    flex-basis: 100%;
+  }
+}
+@media print {
+  .logistics-panel {
+    break-before: page;
+    background: white;
+  }
+  .logistics-actions,
+  .process-step .button,
+  .slot-details .button,
+  .movement-heading button {
+    display: none !important;
+  }
+  .layout-premise,
+  .rack-note,
+  .rack-title,
+  .oee-explanation,
+  .movement-log li,
+  .movement-log time,
+  .slot-details p,
+  .process-step small,
+  .step-hint {
+    color: #34485c;
+  }
+  .process-flow,
+  .slot-details,
+  .rack-slot {
+    background: #f1f5f8;
+    color: #21394e;
+  }
+  .rack-slot.occupied {
+    background: #c9dfef;
+    color: #21394e;
+  }
+  .warehouse-grid {
+    grid-template-columns: 1.6fr 1fr;
+  }
+  .rack-slot {
+    min-height: 65px;
+    padding: 8px 4px;
+    gap: 2px;
+  }
+  .slot-crate {
+    font-size: 17px;
+  }
+  .slot-address {
+    font-size: 8px;
+  }
+  .rack-slot.selected {
+    outline: none;
+  }
+  .slot-details h3,
+  .slot-details dd,
+  .receipt-detail strong {
+    color: #21394e;
+  }
+  .slot-details dt,
+  .receipt-detail > span {
+    color: #425c75;
+  }
+  .movement-log {
+    max-height: none;
+    overflow: visible;
+  }
+  .movement-log li {
+    break-inside: avoid;
+    grid-template-columns: 100px 85px 1fr auto;
+  }
+  .movement-log time {
+    grid-column: auto;
+  }
+  .oee-explanation {
+    display: none;
+  }
+  .batch-queue {
+    background: #f5f0e5;
+    color: #614819;
+  }
+  .batch-queue span {
+    background: #e9e0ce;
+  }
+  .warehouse-warning {
+    background: #f5f0e5;
+    color: #614819;
+  }
+}
