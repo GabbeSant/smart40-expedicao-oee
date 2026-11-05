@@ -1,0 +1,9 @@
+.git
+.work
+**/node_modules
+**/dist
+**/dist-processing
+**/data
+**/.env
+chat-reference.html
+FrontEnd/docs

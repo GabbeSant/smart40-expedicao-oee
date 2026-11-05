@@ -1,0 +1,22 @@
+# Blueprint opcional; não provisiona banco nem publica sem configuração no Render.
+services:
+  - type: web
+    name: smart40-api-mes
+    runtime: node
+    buildCommand: npm ci --omit=dev --no-audit --no-fund
+    preDeployCommand: npm run mes:migrate
+    startCommand: npm run mes:start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: MES_HOST
+        value: 0.0.0.0
+      - key: PG_SSL_MODE
+        value: verify-full
+      - key: DATABASE_URL
+        sync: false
+      - key: MES_TOKENS_JSON
+        sync: false
+      - key: MES_ALLOWED_ORIGINS
+        sync: false

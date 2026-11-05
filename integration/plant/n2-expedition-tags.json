@@ -1,0 +1,250 @@
+{
+  "observedFrom": "http://192.168.150.200:1880",
+  "nodeRedVersion": "3.0.2",
+  "plc": {
+    "address": "192.168.150.40",
+    "port": 102,
+    "transport": "iso-on-tcp",
+    "rack": 0,
+    "slot": 1,
+    "cycleMs": 200
+  },
+  "tags": [
+    {
+      "addr": "DB9,X0.0",
+      "name": "recebidoOP"
+    },
+    {
+      "addr": "DB9,X2.0",
+      "name": "recebidoExpedicao"
+    },
+    {
+      "addr": "DB9,X2.1",
+      "name": "iniciarGuardar"
+    },
+    {
+      "addr": "DB9,I4",
+      "name": "posicaoGuardarExpedicao"
+    },
+    {
+      "addr": "DB9,I30",
+      "name": "numeroOP"
+    },
+    {
+      "addr": "DB9,X32.0",
+      "name": "cancelOP"
+    },
+    {
+      "addr": "DB9,X32.1",
+      "name": "finishOP"
+    },
+    {
+      "addr": "DB9,X32.2",
+      "name": "startOP"
+    },
+    {
+      "addr": "DB9,X34.0",
+      "name": "ocupado"
+    },
+    {
+      "addr": "DB9,X34.1",
+      "name": "aguardando"
+    },
+    {
+      "addr": "DB9,X34.2",
+      "name": "manual"
+    },
+    {
+      "addr": "DB9,X34.3",
+      "name": "emergencia"
+    },
+    {
+      "addr": "DB9,X36.0",
+      "name": "pedirPosicao"
+    },
+    {
+      "addr": "DB9,I38",
+      "name": "posicaoGuardado"
+    },
+    {
+      "addr": "DB9,X42.0",
+      "name": "adicionarExpedicao"
+    },
+    {
+      "addr": "DB9,I44",
+      "name": "OPGuardadoExpedicao"
+    },
+    {
+      "addr": "DB9,X46.0",
+      "name": "emergenciaAtivada"
+    },
+    {
+      "addr": "DB9,X46.1",
+      "name": "comutadorAutomatico"
+    },
+    {
+      "addr": "DB9,X46.2",
+      "name": "homeVertical"
+    },
+    {
+      "addr": "DB9,X46.3",
+      "name": "homeGiro"
+    },
+    {
+      "addr": "DB9,X46.4",
+      "name": "homeHorizontal"
+    },
+    {
+      "addr": "DB9,X46.5",
+      "name": "ServoVertical"
+    },
+    {
+      "addr": "DB9,X46.6",
+      "name": "ServoGiro"
+    },
+    {
+      "addr": "DB9,X46.7",
+      "name": "ServoHorizontal"
+    },
+    {
+      "addr": "DB9,X47.0",
+      "name": "condicaoIniciar"
+    },
+    {
+      "addr": "DB103,X0.1",
+      "name": "segurancaOK"
+    },
+    {
+      "addr": "DB103,X0.2",
+      "name": "alimentadorAvancado"
+    },
+    {
+      "addr": "DB103,X0.3",
+      "name": "alimentadorRecuado"
+    },
+    {
+      "addr": "DB103,X0.4",
+      "name": "sensorVacuo"
+    },
+    {
+      "addr": "DB103,X0.5",
+      "name": "chaveAutomatico"
+    },
+    {
+      "addr": "DB103,X0.6",
+      "name": "botaoVerde"
+    },
+    {
+      "addr": "DB103,X0.7",
+      "name": "botaoVermelho"
+    },
+    {
+      "addr": "DB103,X6.0",
+      "name": "pecaStopper"
+    },
+    {
+      "addr": "DB103,W8",
+      "name": "posicaoGuardar"
+    },
+    {
+      "addr": "DB103,W10",
+      "name": "numeroPedido"
+    },
+    {
+      "addr": "DB103,X12.0",
+      "name": "atuadorPosicaoOK"
+    },
+    {
+      "addr": "DB103,X12.1",
+      "name": "atuadorOcupado"
+    },
+    {
+      "addr": "DB103,X20.0",
+      "name": "avancaAlimentador"
+    },
+    {
+      "addr": "DB103,X20.1",
+      "name": "acionaVacuo"
+    },
+    {
+      "addr": "DB103,X20.2",
+      "name": "esteira1"
+    },
+    {
+      "addr": "DB103,X20.3",
+      "name": "esteira2"
+    },
+    {
+      "addr": "DB103,X20.4",
+      "name": "stopper1"
+    },
+    {
+      "addr": "DB103,X20.5",
+      "name": "stopper2"
+    },
+    {
+      "addr": "DB103,X26.0",
+      "name": "triggerAtuador"
+    },
+    {
+      "addr": "DB103,W28",
+      "name": "posicaoAtuador"
+    },
+    {
+      "addr": "DB9,I6",
+      "name": "opPosicao1"
+    },
+    {
+      "addr": "DB9,I8",
+      "name": "opPosicao2"
+    },
+    {
+      "addr": "DB9,I10",
+      "name": "opPosicao3"
+    },
+    {
+      "addr": "DB9,I12",
+      "name": "opPosicao4"
+    },
+    {
+      "addr": "DB9,I14",
+      "name": "opPosicao5"
+    },
+    {
+      "addr": "DB9,I16",
+      "name": "opPosicao6"
+    },
+    {
+      "addr": "DB9,I18",
+      "name": "opPosicao7"
+    },
+    {
+      "addr": "DB9,I20",
+      "name": "opPosicao8"
+    },
+    {
+      "addr": "DB9,I22",
+      "name": "opPosicao9"
+    },
+    {
+      "addr": "DB9,I24",
+      "name": "opPosicao10"
+    },
+    {
+      "addr": "DB9,I26",
+      "name": "opPosicao11"
+    },
+    {
+      "addr": "DB9,I28",
+      "name": "opPosicao12"
+    },
+    {
+      "addr": "DB9,X42.1",
+      "name": "removerExpedicao"
+    },
+    {
+      "addr": "DB9,I40",
+      "name": "posicaoRemovidoExpedicao"
+    }
+  ]
+}

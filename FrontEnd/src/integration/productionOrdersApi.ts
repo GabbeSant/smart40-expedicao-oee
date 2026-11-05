@@ -25,6 +25,8 @@ export interface ProductionOrderDto {
   finishTime?: string | null;
   sequenceNumber?: number | null;
   productionOrderStatusId?: number | null;
+  /** Alias da API de pedidos PostgreSQL no roteiro Caminho A, p.10–11. */
+  status_id?: number | null;
   productionLineId?: number | null;
   processes?: ProductionOrderProcessDto[] | null;
   parameters?: ProductionOrderParameterDto[] | null;
@@ -76,7 +78,7 @@ function isProductionOrder(value: unknown): value is ProductionOrderDto {
       "plannedStartTime", "plannedFinishTime", "startTime", "finishTime",
     ].every((key) => optional(value[key], isText)) &&
     [
-      "id", "priority", "sequenceNumber", "productionOrderStatusId", "productionLineId",
+      "id", "priority", "sequenceNumber", "productionOrderStatusId", "status_id", "productionLineId",
     ].every((key) => optional(value[key], isNumber)) &&
     optional(value.processes, (items) =>
       Array.isArray(items) && items.every((item) =>

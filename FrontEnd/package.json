@@ -3,10 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "exports": {
+    "./processing": {
+      "types": "./dist-processing/processing/index.d.ts",
+      "import": "./dist-processing/processing/index.js"
+    }
+  },
   "scripts": {
     "test": "node --test tests/*.test.ts",
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:processing": "tsc -p tsconfig.processing.json",
     "lint": "eslint .",
     "preview": "vite preview"
   },

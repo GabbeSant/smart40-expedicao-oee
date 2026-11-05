@@ -1,5 +1,7 @@
 # SMART 4.0 · Expedição & OEE
 
+> Sprint 2: a entrega atual é a biblioteca de processamento sem tela em `src/processing`. Consulte o [README da raiz](../README.md) e a [entrega técnica](../ENTREGA-SPRINT2.md). As instruções abaixo descrevem somente a demonstração React anterior.
+
 Protótipo independente do **Grupo 5**, preparado para a aula 2. React, TypeScript e Vite, sem backend ou dependência do App Shell. A pasta mantém o nome antigo por compatibilidade com o checkout.
 
 Todos os indicadores, ordens, lotes e saídas são simulados. Nenhum comando é enviado à planta. Os dados são salvos neste navegador e restaurados com a simulação pausada. Reiniciar ou trocar de cenário substitui os dados salvos.

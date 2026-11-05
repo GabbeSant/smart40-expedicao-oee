@@ -1,0 +1,10 @@
+.work/
+chat-reference.html
+node_modules/
+FrontEnd/dist-processing/
+integration/node-red/data/
+integration/node-red/.env
+**/.env
+*.log
+release/
+.vercel/

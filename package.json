@@ -1,0 +1,30 @@
+{
+  "name": "smart40-sprint2-integration",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "npm --prefix FrontEnd run build:processing",
+    "build:release": "npm run build && node integration/package-artifacts.mjs",
+    "test": "npm --prefix FrontEnd test",
+    "test:e2e": "npm run build && node --test integration/tests/*.test.mjs",
+    "node-red": "node integration/node-red/start.mjs",
+    "demo:mqtt": "node integration/demo-publisher.mjs",
+    "mes:start": "node integration/api-mes/start.mjs",
+    "mes:migrate": "node integration/api-mes/start.mjs --migrate",
+    "plant:inspect": "npm run build && node integration/plant/run-inspection.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
+    "aedes": "^0.51.3",
+    "mqtt": "^5.14.1",
+    "node-red": "^4.1.0",
+    "selfsigned": "^5.5.0",
+    "ws": "^8.18.3"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
+}

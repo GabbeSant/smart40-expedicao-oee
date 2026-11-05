@@ -1,0 +1,22 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports: ["127.0.0.1:1883:1883"]
+    volumes:
+      - ./integration/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqtt-data:/mosquitto/data
+  node-red:
+    build:
+      context: .
+      dockerfile: integration/node-red/Dockerfile
+    env_file: ./integration/node-red/.env
+    environment:
+      MQTT_LOCAL_HOST: mosquitto
+      NODE_RED_HOST: 0.0.0.0
+      NODE_RED_EDITOR: "false"
+    ports: ["127.0.0.1:1880:1880"]
+    volumes: ["processing-data:/data"]
+    depends_on: [mosquitto]
+volumes:
+  mqtt-data:
+  processing-data:
