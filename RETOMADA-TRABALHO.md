@@ -11,6 +11,17 @@ Branch de trabalho e destino do envio: **`consolidacao-sprint2`**. O commit que 
 
 A base veio da branch `teste`. A `teste2` foi inspecionada e reaproveitada seletivamente, sem importar aplicações duplicadas. Não foi feito merge na `main`.
 
+### Resultado do envio ao GitHub
+
+Os 53 arquivos da entrega foram publicados na branch `consolidacao-sprint2`, revisão `b0cbd828668e92126e4a41bcd3921ed96e4d7d61`. O [GitHub Actions dessa revisão](https://github.com/GabbeSant/smart40-expedicao-oee/actions/runs/41946682182) terminou com **sucesso**. Esta atualização de documentação é posterior àquela validação; conferir também a execução associada ao último commit ao retomar.
+
+As integrações existentes acionaram dois deploys automáticos Vercel e ambos registraram falha:
+
+- [smart40-expedicao-oee](https://vercel.com/gabbesant/smart40-expedicao-oee/DGrAYKdw8Zrevd7oqrgg69iq4xA3).
+- [smart40-expedicao](https://vercel.com/gabbesant/smart40-expedicao/5XdCKnUpErg7aPY8VzjBWaTSXmfU).
+
+O conector Vercel retornou 404 ao consultar o projeto/deployment, inclusive com o time informado pela conexão; não foi possível determinar a causa do build por essa sessão. Na próxima retomada, abrir esses links na conta que administra os projetos e conferir os logs, Root Directory, comandos de instalação/build, saída e versão do Node. Nenhuma configuração remota foi alterada para tentar contornar a falha. O envio de código ao GitHub e o CI de testes estão confirmados; a publicação Vercel permanece pendente.
+
 ## O que está implementado
 
 | Parte | Estado |
