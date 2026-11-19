@@ -321,6 +321,10 @@ function App() {
             <Icon name="box" />
             Histórico de saídas
           </a>
+          <a className="nav-link" href="./sprint3.html">
+            <Icon name="grid" />
+            Expedição · Sprint 3
+          </a>
         </nav>
         <div className="sidebar-bottom">
           <div className="station-line">

@@ -21,6 +21,10 @@ Abra **http://localhost:8084**. No PowerShell com execução de scripts bloquead
 
 ## Demonstrar
 
+### Sprint 3 · Expedição e OEE
+
+Abra `/sprint3.html` no Vite. Para validar as observações reais na bancada, inicie `npm --prefix FrontEnd run dev -- --mode bancada --host 127.0.0.1` na raiz e clique em **Ler bancada N2**. A fonte de produção do painel publicado é o barramento do App Shell. A simulação e o acesso de diagnóstico da bancada ficam no desenvolvimento. O [guia da Sprint 3](docs/SPRINT3-EXPEDICAO.md) registra o cálculo, a integração e as pendências de aceite.
+
 - Sete cenários, incluindo **Novo planejamento** para cadastrar as próprias OPs e começar do zero.
 - Cadastro de OP com produto, quantidade e destino; códigos duplicados são rejeitados.
 - Simulação automática: uma peça a cada 5 segundos, ou avanço manual com `+ 1 peça` quando pausada.
