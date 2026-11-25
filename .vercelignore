@@ -1,0 +1,19 @@
+.work/
+.codex-tmp/
+.git/
+.aws/
+.codex/
+.agents/
+Frontend DOCS/
+docs/estabilizacao-sprint3/evidencias/
+test-results/
+playwright-report/
+release/
+FrontEnd/dist/
+FrontEnd/dist-processing/
+integration/node-red/data/
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+*.log

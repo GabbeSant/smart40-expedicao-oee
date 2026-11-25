@@ -7,7 +7,10 @@
   },
   "scripts": {
     "build": "npm --prefix FrontEnd run build:processing",
-    "build:release": "npm run build && node integration/package-artifacts.mjs",
+    "build:release": "npm run build && npm --prefix FrontEnd run build && node integration/package-artifacts.mjs && npm run verify:release",
+    "verify:release": "node integration/verify-artifacts.mjs",
+    "preview:release": "node integration/serve-release.mjs",
+    "test:browser": "playwright test",
     "test": "npm --prefix FrontEnd test",
     "test:e2e": "npm run build && node --test integration/tests/*.test.mjs",
     "node-red": "node integration/node-red/start.mjs",
@@ -18,9 +21,10 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.15",
+    "@playwright/test": "1.65.1",
     "aedes": "^0.51.3",
     "mqtt": "^5.14.1",
-    "node-red": "^4.1.0",
+    "node-red": "^4.1.18",
     "selfsigned": "^5.5.0",
     "ws": "^8.18.3"
   },

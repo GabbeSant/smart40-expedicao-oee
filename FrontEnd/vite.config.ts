@@ -6,6 +6,7 @@ import { sprint3Bench } from './sprint3-bench.ts'
 export default defineConfig(({ mode }) => ({
   plugins: [react(), mode === 'bancada' && sprint3Bench(loadEnv(mode, process.cwd(), 'S3_'))],
   build: {
+    manifest: true,
     rolldownOptions: {
       preserveEntrySignatures: 'strict',
       input: {
