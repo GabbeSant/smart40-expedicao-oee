@@ -59,8 +59,8 @@ export function sprint3Bench(env: Record<string, string>): Plugin {
     const position = typeof value === "number" ? value : value && typeof value === "object" && "position" in value ? value.position : null;
     const firstFree = slotNumber(position) ? position : null;
     const registered = blocks.ok ? readRegisteredBlocks(blocks.body, new Date().toISOString()) : null;
-    const status = firstFree !== null || registered ? "available" : [free.code, blocks.code].some(code => code === 401 || code === 403)
-      ? "unauthorized" : free.ok || blocks.ok ? "unknown-format" : "unavailable";
+    const status = [free.code, blocks.code].some(code => code === 401 || code === 403) ? "unauthorized" :
+      firstFree !== null || registered ? "available" : free.ok || blocks.ok ? "unknown-format" : "unavailable";
     return { status, firstFree, registered };
   }
 

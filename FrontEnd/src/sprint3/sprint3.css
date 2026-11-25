@@ -47,6 +47,9 @@ body:has(> #root > .s3) { margin: 0; }
 .s3-level h3 { font-size: .79rem; margin-bottom: 4px; color: var(--muted); }
 .s3-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; list-style: none; padding: 0; }
 .s3-slot { padding: 5px 8px; background: var(--inset); border: 1px dashed #60718a; border-radius: 6px; min-height: 46px; }
+.s3-slot { min-width: 0; overflow-wrap: anywhere; transition: background-color .15s, border-color .15s; }
+.s3 .s3-difference { color: var(--amber); font-weight: 650; }
+@media (prefers-reduced-motion: reduce) { .s3-slot { transition: none; } }
 .s3-slot small, .s3-slot strong { display: block; }
 .s3-slot small { font-size: .75rem; }
 .s3-free { border-style: solid; background: #263345; }

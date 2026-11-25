@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { EXPEDITION_TELEMETRY_EVENT } from "../processing/appShell.ts";
-import { PROJECT_TELEMETRY_EVENT } from "../processing/projectTelemetry.ts";
 import { isCount, isRecord, isText, isUtcDate } from "../processing/validation.ts";
 import { createSprint3Session } from "./session.ts";
 import type { ResetEntry } from "./session.ts";
@@ -9,6 +7,7 @@ import { readBenchObservation } from "./bench.ts";
 import type { BenchObservation } from "./bench.ts";
 import { sprint3Demo } from "./demo.ts";
 import { reconcileSlot } from "./magazine.ts";
+import { bindSprint3Session } from "./binding.ts";
 
 const liveSession = createSprint3Session("medido");
 const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
@@ -30,7 +29,7 @@ function showAudit(key: string) {
   try { return readAudit(key); } catch { return []; }
 }
 
-export function Dashboard({ standalone = false }: { standalone?: boolean }) {
+export function Dashboard({ standalone = false, onReset }: { standalone?: boolean; onReset?: (entry: ResetEntry) => void }) {
   const [session, setSession] = useState(() => liveSession);
   const [simulated, setSimulated] = useState(false);
   const [current, setCurrent] = useState(() => ({ view: liveSession.view(), now: Date.now() }));
@@ -44,19 +43,11 @@ export function Dashboard({ standalone = false }: { standalone?: boolean }) {
   const { snapshot, indicators, criteria, cumulative, counts, times } = view;
 
   useEffect(() => {
-    const receive = (event: Event) => {
-      const detail = (event as CustomEvent<unknown>).detail;
-      if (event.type === EXPEDITION_TELEMETRY_EVENT || (isRecord(detail) && "estacoes" in detail)) session.receive(detail);
-    };
-    if (!simulated) {
-      window.addEventListener(PROJECT_TELEMETRY_EVENT, receive);
-      window.addEventListener(EXPEDITION_TELEMETRY_EVENT, receive);
-    }
+    const dispose = !simulated ? bindSprint3Session(session, window) : () => {};
     const interval = window.setInterval(() => setCurrent({ view: session.view(), now: Date.now() }), 1000);
     return () => {
       window.clearInterval(interval);
-      window.removeEventListener(PROJECT_TELEMETRY_EVENT, receive);
-      window.removeEventListener(EXPEDITION_TELEMETRY_EVENT, receive);
+      dispose();
     };
   }, [session, simulated]);
 
@@ -98,11 +89,13 @@ export function Dashboard({ standalone = false }: { standalone?: boolean }) {
     const author = String(new FormData(event.currentTarget).get("actor") ?? "");
     const key = `smart40-sprint3-reset-${simulated ? "simulado" : "medido"}`;
     try {
-      session.reset(author, entry => localStorage.setItem(key, JSON.stringify([...readAudit(key), entry])));
+      const entry = session.reset(author, entry => localStorage.setItem(key, JSON.stringify([...readAudit(key), entry])));
       setAudit(showAudit(key));
       setCurrent({ view: session.view(), now: Date.now() });
       setReviewingReset(false);
       setNotice(cumulative ? "Reset registrado. Nova referência salva; aguardando amostra." : "Reset registrado e contadores da sessão zerados.");
+      try { onReset?.(entry); }
+      catch { setNotice("Reset registrado. O App Shell não confirmou a notificação; confira a janela de cálculo."); }
     } catch (error) { setNotice(error instanceof Error ? error.message : "Reset indisponível."); }
   }
 
@@ -112,6 +105,7 @@ export function Dashboard({ standalone = false }: { standalone?: boolean }) {
   const benchAge = bench ? now - Date.parse(bench.observedAt) : 0;
   const measuredAt = cumulative?.observedAt ?? snapshot?.lastUpdated;
   const measurementStale = !simulated && measuredAt != null && now - Date.parse(measuredAt) > 15_000;
+  const disconnected = !simulated && ["DISCONNECTED", "CONNECTING", "STALE"].includes(view.connection);
   const magazineStale = !simulated && view.magazine && now - Date.parse(view.magazine.timestamp) > 15_000;
   const registered = view.registered ?? (reading ? bench?.magazine.registered : null);
   const registryCurrent = registered && now - Date.parse(registered.observedAt) <= 45_000;
@@ -124,7 +118,7 @@ export function Dashboard({ standalone = false }: { standalone?: boolean }) {
     <div className="s3">
       <header className="s3-top">
         <div className="s3-brand"><span aria-hidden="true">S4</span><div><strong>SMART 4.0</strong><small>Planta N2 · Bancada 4</small></div></div>
-        {standalone && <a href="./">Painel anterior <span aria-hidden="true">↗</span></a>}
+        {standalone && import.meta.env.DEV && <a href="./">Painel anterior <span aria-hidden="true">↗</span></a>}
       </header>
       <main className="s3-main">
         <header className="s3-hero">
@@ -136,6 +130,8 @@ export function Dashboard({ standalone = false }: { standalone?: boolean }) {
               onClick={() => { setBench(null); setBenchError(null); setReading(!reading); }}>{reading ? "Parar leitura" : "Ler bancada N2"}</button>}
           </div>
         </header>
+
+        {disconnected && <p className="s3-warning" role="status">{view.connection === "DISCONNECTED" ? "App Shell desconectado" : view.connection === "CONNECTING" ? "App Shell reconectando" : "Telemetria vencida"}. Últimos valores preservados; aguarde dados atuais.</p>}
 
         <section className="s3-kpis" aria-label="Indicadores de produção">
           {metrics.map(([label, value], index) => (
@@ -176,6 +172,7 @@ export function Dashboard({ standalone = false }: { standalone?: boolean }) {
           <section className="s3-card" aria-labelledby="s3-source-title">
             <header className="s3-section"><h2 id="s3-source-title">Dados da operação</h2></header>
             <dl className="s3-dl">
+              <div><dt>Conexão do App Shell</dt><dd>{simulated ? "Simulação local" : view.connection}</dd></div>
               <div><dt>Telemetria de produção</dt><dd>{measurementStale ? "Último valor vencido" : measuredAt ? time.format(new Date(measuredAt)) : "Aguardando App Shell"}</dd></div>
               <div><dt>Peças processadas</dt><dd>{text(counts?.totalProduced)}</dd></div>
               <div><dt>Aprovadas / rejeitadas</dt><dd>{text(counts?.approved)} / {text(counts?.rejected)}</dd></div>
@@ -207,10 +204,12 @@ export function Dashboard({ standalone = false }: { standalone?: boolean }) {
             <dl className="s3-dl">
               <div><dt>Capacidade nominal</dt><dd>{text(criteria?.nominalPerHour, " peças/h")}</dd></div>
               <div><dt>Tempo planejado</dt><dd>{text(counts ? times?.plannedSeconds : null, " s")}</dd></div>
+              <div><dt>Tempo produtivo</dt><dd>{text(counts ? times?.operatingSeconds : null, " s")}</dd></div>
               <div><dt>Tempo parado</dt><dd>{text(indicators.downtimeSeconds, " s")}</dd></div>
               <div><dt>Critério de aprovação</dt><dd>{criteria?.inspection ?? "Pendente com o instrutor"}</dd></div>
               <div><dt>Fonte das premissas</dt><dd>{criteria?.reference ?? "N/D"}</dd></div>
             </dl>
+            <p className="s3-caption">Disponibilidade = produtivo / planejado. Performance = total / (produtivo em horas × capacidade), limitada a 100%. Qualidade = aprovadas / total.</p>
             {indicators.oee === null && <p className="s3-caption">OEE em N/D até receber produção válida, tempo produtivo e premissas aprovadas.</p>}
           </section>
 
@@ -226,6 +225,7 @@ export function Dashboard({ standalone = false }: { standalone?: boolean }) {
               <button type="submit">Confirmar reset</button>
             </form>}
             <p role="status" className="s3-caption">{notice}</p>
+            <p className="s3-caption">Autor declarado pelo operador, sem autenticação do App Shell. Histórico local deste navegador; não altera o CLP.</p>
             {audit.length ? <ol className="s3-log">{audit.slice(-10).reverse().map((row, index) => (
               <li key={`${row.at}-${index}`}><strong>{row.author}</strong><span>{time.format(new Date(row.at))} · {row.totalBefore} peças antes do reset</span></li>
             ))}</ol> : <p className="s3-caption">Nenhum reset registrado neste navegador.</p>}

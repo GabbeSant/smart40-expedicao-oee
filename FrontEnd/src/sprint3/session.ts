@@ -20,6 +20,13 @@ export interface ResetEntry {
   assetId: string;
   totalBefore: number;
   referenceAt?: string;
+  before?: {
+    counts: ProductionCounts | null;
+    times: AnalysisTimes | null;
+    criteria: Criteria | null;
+    indicators: ReturnType<typeof indicators>;
+    magazine: Magazine | null;
+  };
 }
 
 export interface Magazine {
@@ -47,11 +54,13 @@ function indicators(counts: ProductionCounts | null, window: AnalysisTimes | nul
   const idealCycleSeconds = 3600 / criteria.nominalPerHour;
   if (!Number.isFinite(idealCycleSeconds)) return unavailable;
   const metrics = calculateOee(counts.totalProduced, counts.approved, window && { ...window, idealCycleSeconds });
+  if (Object.values(metrics).some(value => value !== null && !Number.isFinite(value))) return unavailable;
   const performance = metrics.performance === null ? null : Math.min(metrics.performance, 100);
   const oee = performance !== null && metrics.quality !== null && metrics.availability !== null
     ? performance * metrics.quality * metrics.availability / 10000 : null;
+  const ppm = window && window.operatingSeconds > 0 ? counts.totalProduced * 60 / window.operatingSeconds : null;
   return { availability: metrics.availability, performance, quality: metrics.quality, oee,
-    ppm: window && window.operatingSeconds > 0 ? counts.totalProduced * 60 / window.operatingSeconds : null,
+    ppm: ppm !== null && Number.isFinite(ppm) ? ppm : null,
     downtimeSeconds: window ? window.plannedSeconds - window.operatingSeconds : null };
 }
 
@@ -63,6 +72,7 @@ export function createSprint3Session(origin: Origin, now = Date.now) {
   let magazine: Magazine | null = null;
   let registered: RegisteredMagazine | null = null;
   let productionKnown = false;
+  let transport: "UNKNOWN" | "CONNECTING" | "CONNECTED" | "DISCONNECTED" | "STALE" = "UNKNOWN";
 
   function matchScope(unitId: string, assetId: string) {
     scope ??= { unitId, assetId };
@@ -77,12 +87,17 @@ export function createSprint3Session(origin: Origin, now = Date.now) {
       (startedAt && Date.parse(startedAt) > Date.parse(event.timestamp)) || !matchScope(event.unitId, event.assetId)) return;
     processor ??= createExpeditionProcessor({ unitId: event.unitId, assetId: event.assetId, origin, now,
       productionMode: mode ?? (event.type === "production.counters" ? "counters" : "pieces"),
-      startedAt: startedAt ?? (event.type === "analysis.window" ? event.startedAt : event.timestamp) });
+      startedAt: event.type === "production.counters" ? event.timestamp :
+        startedAt ?? (event.type === "analysis.window" ? event.startedAt : event.timestamp) });
     const result = processor.ingest(event);
     if (result.status === "applied" && (event.type === "piece.processed" || event.type === "production.counters")) productionKnown = true;
   }
 
   return {
+    setConnection(value: unknown) {
+      const status = isRecord(value) && isRecord(value.data) ? value.data.status : value;
+      if (status === "CONNECTED" || status === "DISCONNECTED" || status === "CONNECTING" || status === "STALE") transport = status;
+    },
     receive(value: unknown) {
       if (!isRecord(value)) return;
       if (value.schemaVersion === "1.0" && "streamId" in value) { ingest(value); return; }
@@ -119,7 +134,12 @@ export function createSprint3Session(origin: Origin, now = Date.now) {
         totalProduced: snapshot.totalProduced, approved: snapshot.approved, rejected: snapshot.rejected,
       } : null;
       const times = cumulative ? cumulative.times : snapshot?.analysisWindow ?? null;
+      const observedAt = cumulative?.observedAt ?? snapshot?.lastUpdated ?? magazine?.timestamp ?? null;
+      const stale = observedAt !== null && now() - Date.parse(observedAt) > 15_000;
+      const connection = transport === "UNKNOWN" ? observedAt === null ? "UNKNOWN" : stale ? "STALE" : "CONNECTED" :
+        transport === "CONNECTED" && stale ? "STALE" : transport;
       return { snapshot, criteria, magazine, registered, productionKnown, cumulative, counts, times,
+        connection,
         canReset: cumulative ? cumulative.state !== "baseline" : productionKnown,
         indicators: indicators(counts, times, criteria) };
     },
@@ -127,10 +147,15 @@ export function createSprint3Session(origin: Origin, now = Date.now) {
       const name = author.trim();
       if (!name || name.length > 80) throw new Error("Informe o nome de quem solicita o reset.");
       const at = now();
+      const previous = this.view();
+      const before = structuredClone({ counts: previous.counts, times: previous.times, criteria,
+        indicators: previous.indicators, magazine });
       if (meter && scope && meter.view().state !== "baseline") {
-        const { totalBefore, referenceAt } = meter.resetInfo();
+        const { totalBefore, referenceAt, countsBefore, timesBefore } = meter.resetInfo();
         if (at < Date.parse(referenceAt)) throw new Error("O relógio local está atrás da fonte de produção.");
-        const entry = { author: name, at: new Date(at).toISOString(), ...scope, totalBefore, referenceAt };
+        const alignedTimes = timesBefore && timesBefore.operatingSeconds <= timesBefore.plannedSeconds ? timesBefore : null;
+        const entry = { author: name, at: new Date(at).toISOString(), ...scope, totalBefore, referenceAt,
+          before: { ...before, counts: countsBefore, times: alignedTimes, indicators: indicators(countsBefore, alignedTimes, criteria) } };
         record(entry);
         meter.resetReference();
         return entry;
@@ -138,7 +163,7 @@ export function createSprint3Session(origin: Origin, now = Date.now) {
       const state = processor?.snapshot(at);
       if (!processor || !state || !productionKnown) throw new Error("A sessão ainda não possui leitura de produção.");
       if (at < Date.parse(state.lastUpdated ?? state.sessionStartedAt)) throw new Error("O relógio local está atrás da fonte de produção.");
-      const entry = { author: name, at: new Date(at).toISOString(), unitId: state.unitId, assetId: state.assetId, totalBefore: state.totalProduced };
+      const entry = { author: name, at: new Date(at).toISOString(), unitId: state.unitId, assetId: state.assetId, totalBefore: state.totalProduced, before };
       record(entry);
       processor.resetSession(entry.at);
       return entry;

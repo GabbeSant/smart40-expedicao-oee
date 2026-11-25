@@ -78,6 +78,10 @@ export function createCumulativeMeter(first: CumulativeSample) {
       nextEpoch = null;
       lastTimed = baseline.times;
     },
-    resetInfo: () => ({ totalBefore: latest.totalProduced - baseline.totalProduced, referenceAt: (nextEpoch ?? latest).timestamp }),
+    resetInfo: () => ({ totalBefore: latest.totalProduced - baseline.totalProduced, referenceAt: (nextEpoch ?? latest).timestamp,
+      countsBefore: { totalProduced: latest.totalProduced - baseline.totalProduced,
+        approved: latest.approved - baseline.approved, rejected: latest.rejected - baseline.rejected },
+      timesBefore: baseline.times && latest.times ? { plannedSeconds: latest.times.plannedSeconds - baseline.times.plannedSeconds,
+        operatingSeconds: latest.times.operatingSeconds - baseline.times.operatingSeconds } : null }),
   };
 }

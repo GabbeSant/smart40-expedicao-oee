@@ -4,6 +4,7 @@ import { createSprint3Session, readMagazine } from "../src/sprint3/session.ts";
 import type { ResetEntry } from "../src/sprint3/session.ts";
 import { readBenchObservation } from "../src/sprint3/bench.ts";
 import { readRegisteredBlocks, reconcileSlot } from "../src/sprint3/magazine.ts";
+import { bindSprint3Session } from "../src/sprint3/binding.ts";
 
 const start = Date.parse("2026-11-18T20:00:00.000Z");
 const stamp = (offset: number) => new Date(start + offset * 1000).toISOString();
@@ -66,11 +67,14 @@ test("reset registra autor e horário antes de zerar, conserva magazine e dedupl
   assert.throws(() => session.reset("Ana", () => { throw new Error("armazenamento indisponível"); }));
   assert.equal(session.view().snapshot?.totalProduced, 1);
   const entries: ResetEntry[] = [];
+  const previous = session.view();
   session.reset(" Ana ", entry => {
     assert.equal(session.view().snapshot?.totalProduced, 1);
     entries.push(entry);
   });
-  assert.deepEqual(entries, [{ author: "Ana", at: stamp(91), unitId: "N2", assetId: "EXPEDICAO", totalBefore: 1 }]);
+  assert.deepEqual(entries, [{ author: "Ana", at: stamp(91), unitId: "N2", assetId: "EXPEDICAO", totalBefore: 1,
+    before: { counts: previous.counts, times: previous.times, criteria: previous.criteria,
+      indicators: previous.indicators, magazine: previous.magazine } }]);
   assert.equal(session.view().snapshot?.totalProduced, 0);
   assert.equal(session.view().magazine?.positions[3], true);
   session.receive({ ...piece(1, "APPROVED"), seq: 15, timestamp: stamp(92), eventId: "replay" });
@@ -139,9 +143,62 @@ test("mudança de época mantém OEE indisponível até reset auditado e próxim
   session.reset("Ana", entry => sent.push(entry));
   assert.equal(sent[0].referenceAt, stamp(95));
   assert.equal(sent[0].totalBefore, 6);
+  assert.deepEqual(sent[0].before?.counts, { totalProduced: 6, approved: 6, rejected: 0 });
   assert.equal(session.view().counts, null);
   session.receive(counterFrame(2, 105, 1, 0, 15, 12, "turno-B"));
   session.receive(counterFrame(3, 106, 20, 1, 171, 140, "turno-A"));
   assert.equal(session.view().counts?.totalProduced, 1);
   assert.equal(session.view().indicators.oee, 80);
+});
+
+test("zero, ausência de premissas e entradas inválidas não produzem indicadores fictícios", () => {
+  for (const input of [null, {}, { ...criteria, nominalPerHour: 0 }, { ...criteria, nominalPerHour: Infinity }]) {
+    const session = createSprint3Session("medido", () => start + 90_000);
+    session.receive(frame([piece(1, "APPROVED"), analysis], { criterios: input }));
+    assert.equal(session.view().indicators.oee, null);
+    assert.equal(session.view().indicators.ppm, null);
+  }
+  const session = createSprint3Session("medido", () => start + 90_000);
+  session.receive(frame([piece(1, "APPROVED"), { ...analysis, operatingSeconds: 91 }]));
+  assert.equal(session.view().times, null);
+  assert.equal(session.view().indicators.oee, null);
+  session.receive(frame([{ ...analysis, seq: 10, eventId: "zero", plannedSeconds: 0, operatingSeconds: 0 }]));
+  assert.equal(session.view().indicators.availability, null);
+  assert.equal(session.view().indicators.performance, null);
+  assert.equal(session.view().indicators.ppm, null);
+});
+
+test("conexão do Shell, staleness e dispose não perdem contagens nem deixam listeners", () => {
+  let clock = start + 90_000;
+  const session = createSprint3Session("medido", () => clock);
+  const target = new EventTarget();
+  const send = (type: string, detail: unknown) => target.dispatchEvent(new CustomEvent(type, { detail }));
+  assert.equal(session.view().connection, "UNKNOWN");
+  const dispose = bindSprint3Session(session, target);
+  send("smart40:connection.state", { data: { status: "CONNECTED" } });
+  send("smart40:telemetria", frame([piece(1, "APPROVED"), analysis]));
+  assert.equal(session.view().connection, "CONNECTED");
+  send("smart40:connection.state", { data: { status: "DISCONNECTED" } });
+  assert.equal(session.view().connection, "DISCONNECTED");
+  assert.equal(session.view().counts?.totalProduced, 1);
+  send("smart40:expedition:connection", "CONNECTED");
+  assert.equal(session.view().connection, "CONNECTED");
+  clock += 16_000;
+  assert.equal(session.view().connection, "STALE");
+  dispose(); dispose();
+  send("smart40:expedition:connection", "DISCONNECTED");
+  send("smart40:expedition:telemetry", { ...piece(20, "APPROVED"), timestamp: stamp(100) });
+  assert.equal(session.view().connection, "STALE");
+  assert.equal(session.view().counts?.totalProduced, 1);
+});
+
+test("contadores v1 não combinam deltas com tempos anteriores à primeira referência", () => {
+  const session = createSprint3Session("medido", () => start + 90_000);
+  const counter = (seq: number, total: number) => ({ ...base, type: "production.counters", counterEpoch: "A",
+    seq, eventId: `counter-${seq}`, timestamp: stamp(seq), totalProduced: total, approved: total, rejected: 0 });
+  session.receive(frame([counter(1, 100), counter(2, 102), analysis], { modoProducao: "counters" }));
+  assert.equal(session.view().counts?.totalProduced, 2);
+  assert.equal(session.view().indicators.oee, null);
+  session.receive(frame([{ ...analysis, seq: 10, eventId: "alinhada", startedAt: stamp(1) }], { modoProducao: "counters" }));
+  assert.notEqual(session.view().indicators.oee, null);
 });
