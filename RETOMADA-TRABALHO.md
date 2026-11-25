@@ -1,5 +1,9 @@
 # Ponto de retomada — SMART 4.0 / Grupo 5
 
+**Atualização de 25/11/2026:** a Sprint 3 foi estabilizada na branch `estabilizacao-sprint3`, a partir de `7968a14` de `consolidacao-sprint2`. O build oficial agora entrega biblioteca/fluxos da Sprint 2 e interface/módulo da Sprint 3 no mesmo `release/`. Comece pelo [roteiro da bancada às 18h45](docs/estabilizacao-sprint3/04-ROTEIRO-BANCADA-25-11.md), depois consulte os [testes atuais](docs/estabilizacao-sprint3/05-RESULTADOS-DOS-TESTES.md) e a [integração para Elias](docs/estabilizacao-sprint3/03-INTEGRACAO-GRUPO1.md). Não houve publicação externa nem homologação física nesta sessão.
+
+O registro abaixo é histórico de 04/11 e descreve a entrega da Sprint 2. A referência avaliativa atual é `Frontend DOCS/Sprint3_Grupo5.pdf`, pp. 5–9; a Sprint 3 inclui tela própria.
+
 Registro de fechamento de 04/11/2026 para o próximo dia de trabalho.
 
 ## Onde estamos

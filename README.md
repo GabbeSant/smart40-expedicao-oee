@@ -1,10 +1,27 @@
 # SMART 4.0 — Grupo 5 · Processamento de Expedição e OEE
 
-**Para continuar no próximo dia de trabalho:** ler [RETOMADA-TRABALHO.md](RETOMADA-TRABALHO.md), que reúne estado atual, validação, acesso à bancada e próximas ações.
+**Bancada em 25/11, às 18h45:** começar pelo [roteiro de validação](docs/estabilizacao-sprint3/04-ROTEIRO-BANCADA-25-11.md). O [relatório de estabilização](docs/estabilizacao-sprint3/01-RELATORIO-IMPLEMENTACAO.md) e os [resultados dos testes](docs/estabilizacao-sprint3/05-RESULTADOS-DOS-TESTES.md) descrevem a revisão atual.
 
-A entrega da Sprint 2 é uma biblioteca TypeScript **sem tela própria**. Recebe eventos, valida e deduplica peças, acompanha a expedição e fornece indicadores ao App Shell do Grupo 1. O React existente permanece como demonstração local e não integra o pacote de entrega.
+A entrega reúne a biblioteca TypeScript da **Sprint 2**, sem tela própria, e o painel de expedição e OEE da **Sprint 3**. A biblioteca continua validando e deduplicando eventos. O painel exibe OEE completo, PPM, magazine 3 × 4, comparação com o gestor e reset auditável. A demonstração React anterior permanece disponível no desenvolvimento.
 
-O escopo segue a orientação mais recente do professor, reproduzida na conversa fornecida pelo usuário. A pasta `FrontEnd/docs` não foi usada como requisito desta implementação.
+Para a Sprint 3, a referência principal é `Frontend DOCS/Sprint3_Grupo5.pdf`, especialmente pp. 5–9. O [guia da Sprint 3](FrontEnd/docs/SPRINT3-EXPEDICAO.md) registra fórmulas e contrato proposto. As orientações históricas de entrega sem tela se referem à Sprint 2.
+
+## Painel da Sprint 3
+
+```sh
+npm --prefix FrontEnd run dev -- --host 127.0.0.1 --port 8084 --strictPort
+```
+
+Abra `http://127.0.0.1:8084/sprint3.html`. A chave de simulação aparece somente no desenvolvimento; seus valores são fictícios. No modo real, o painel aguarda eventos do App Shell e mantém N/D sem dados suficientes. Capacidade nominal, critério de qualidade e fonte são fornecidos por `estacoes.expedicao.criterios`, sem valores industriais padrão. A produção recusa origem simulada.
+
+```sh
+npm run build:release
+npm run preview:release
+```
+
+Abra `http://127.0.0.1:4173/sprint3.html` ou `/`. O build oficial inclui a interface e o módulo ESM em `release/assets/sprint3-module.js`, além da biblioteca e dos fluxos da Sprint 2. O painel publicado não acessa a rede local nem abre WebSocket. O diagnóstico GET de bancada existe apenas no Vite em `--mode bancada`; suas observações não contam peças.
+
+Entregar ao Elias o [guia autossuficiente de integração](docs/estabilizacao-sprint3/03-INTEGRACAO-GRUPO1.md). A montagem usa Shadow DOM, escuta o barramento único e remove listeners e temporizadores no `unmount`. `onReset(entry)` é um callback opcional do host para alinhar a próxima janela de cálculo após reset por peça. O autor do reset é declarado, o registro fica neste navegador e não substitui auditoria autenticada do Shell.
 
 Os PDFs adicionais esclareceram o barramento `smart40:telemetria`, o broker WSS do Caminho A e a API MES. A [análise dos PDFs](ANALISE-PDFS-SPRINT2.md) registra as compatibilidades, os erros encontrados e as correções. A [API MES opcional](integration/api-mes/README.md) já implementa os cinco eventos, sem alterar a biblioteca sem tela.
 
@@ -20,11 +37,13 @@ npm --prefix FrontEnd ci
 npm test
 npm run test:e2e
 npm run build:release
+npx playwright install chromium
+npm run test:browser
 ```
 
 No PowerShell com scripts bloqueados, use `npm.cmd`. O teste integrado cria brokers locais, executa o **Node-RED real**, valida TLS/autenticação em uma nuvem simulada, entrega eventos ao Shell e verifica persistência após reinício. Não acessa a bancada ou brokers públicos.
 
-`release/` contém o módulo ESM `processing/index.js`, suas declarações TypeScript, `manifest.json` e os fluxos `flows.local.json` e `flows.cloud.json`. Não há HTML ou React nesse pacote.
+`release/` contém `processing/index.js`, declarações TypeScript, `manifest.json`, `flows.local.json`, `flows.cloud.json`, `index.html`, `sprint3.html` e os assets da Sprint 3. O nome e o export principal do pacote de processamento foram preservados. `manifest.sprint3` descreve o módulo visual. A seleção de assets pelo manifesto Vite exclui a demonstração simulada anterior. `npm run verify:release` verifica imports, arquivos esperados e exclusão de arquivos locais. Publique o diretório inteiro, pois o módulo importa chunks com nomes gerados.
 
 Os fluxos exportados usam `functionGlobalContext.expedition`, configurado por `integration/node-red/start.mjs`. Para importá-los em outra instalação Node-RED, é necessário instalar a biblioteca e portar esse contexto de execução.
 
@@ -113,6 +132,6 @@ Para o broker **WebSocket** do Caminho A, configure `BROKER_URL` e `TOKEN_AGENTE
 
 ## Entrega e publicação
 
-[ENTREGA-SPRINT2.md](ENTREGA-SPRINT2.md) detalha regras, cálculos e pendências. O workflow de CI executa testes, integração e builds. `vercel.json` prepara a hospedagem **estática da biblioteca**, com CORS para importação pelo Shell. Node-RED e MQTT são processos persistentes separados dessa hospedagem.
+[ENTREGA-SPRINT2.md](ENTREGA-SPRINT2.md) preserva as regras da biblioteca anterior. O workflow de CI executa testes, lint, integração, builds e navegador. `vercel.json` prepara a hospedagem estática da biblioteca e da Sprint 3, com CORS público para os assets sem credenciais e revalidação de cache. `.vercelignore` exclui arquivos de trabalho e ambientes locais. Node-RED, gestor e MQTT são processos separados dessa hospedagem.
 
-O projeto Vercel deve usar a raiz do repositório. Publicação e integração com o Shell real dependem de um destino confirmado e do contrato da turma. O código desta entrega é reunido na branch `consolidacao-sprint2`; o envio ao GitHub não equivale a deploy dos serviços ou merge na main. Consultar [RETOMADA-TRABALHO.md](RETOMADA-TRABALHO.md) para as pendências de integração e publicação.
+O projeto Vercel deve usar a raiz do repositório, build `npm run build:release` e output `release`. A estabilização está na branch `estabilizacao-sprint3`, baseada em `consolidacao-sprint2`. Não houve push, merge, deploy ou alteração externa nesta estabilização. Publicação, integração no G1 e homologação industrial permanecem etapas externas; consulte a [matriz de aceite](docs/estabilizacao-sprint3/02-MATRIZ-DE-ACEITE.md).

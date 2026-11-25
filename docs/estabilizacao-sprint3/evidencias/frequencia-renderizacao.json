@@ -1,0 +1,8 @@
+{
+  "synthetic": true,
+  "inputHz": 10,
+  "events": 40,
+  "durationMs": 3000,
+  "kpiDomUpdates": 2,
+  "maximumExpected": 3
+}
