@@ -1,4 +1,7 @@
 .work/
+.codex-tmp/
+test-results/
+playwright-report/
 chat-reference.html
 node_modules/
 FrontEnd/dist-processing/
