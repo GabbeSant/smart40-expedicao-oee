@@ -1,0 +1,104 @@
+{
+  "synthetic": true,
+  "preludeUnchanged": true,
+  "jsxExpressionsUnchanged": true,
+  "widths": [
+    {
+      "width": 320,
+      "fontScale": 1,
+      "pageOverflow": false,
+      "overflow": [],
+      "slotCount": 12,
+      "columns": 4,
+      "shellButtonColor": "rgb(160, 0, 0)",
+      "headingSize": 28
+    },
+    {
+      "width": 360,
+      "fontScale": 1,
+      "pageOverflow": false,
+      "overflow": [],
+      "slotCount": 12,
+      "columns": 4,
+      "shellButtonColor": "rgb(160, 0, 0)",
+      "headingSize": 28
+    },
+    {
+      "width": 768,
+      "fontScale": 1,
+      "pageOverflow": false,
+      "overflow": [],
+      "slotCount": 12,
+      "columns": 4,
+      "shellButtonColor": "rgb(160, 0, 0)",
+      "headingSize": 28
+    },
+    {
+      "width": 900,
+      "fontScale": 1,
+      "pageOverflow": false,
+      "overflow": [],
+      "slotCount": 12,
+      "columns": 4,
+      "shellButtonColor": "rgb(160, 0, 0)",
+      "headingSize": 28
+    },
+    {
+      "width": 1280,
+      "fontScale": 1,
+      "pageOverflow": false,
+      "overflow": [],
+      "slotCount": 12,
+      "columns": 4,
+      "shellButtonColor": "rgb(160, 0, 0)",
+      "headingSize": 36
+    },
+    {
+      "width": 1440,
+      "fontScale": 1,
+      "pageOverflow": false,
+      "overflow": [],
+      "slotCount": 12,
+      "columns": 4,
+      "shellButtonColor": "rgb(160, 0, 0)",
+      "headingSize": 36
+    },
+    {
+      "width": 360,
+      "fontScale": 2,
+      "pageOverflow": false,
+      "overflow": [],
+      "slotCount": 12,
+      "columns": 4,
+      "shellButtonColor": "rgb(160, 0, 0)",
+      "headingSize": 56
+    },
+    {
+      "width": 1440,
+      "fontScale": 2,
+      "pageOverflow": false,
+      "overflow": [],
+      "slotCount": 12,
+      "columns": 4,
+      "shellButtonColor": "rgb(160, 0, 0)",
+      "headingSize": 56
+    }
+  ],
+  "errors": [],
+  "focus": {
+    "outlineWidth": "3px",
+    "outlineStyle": "solid",
+    "outlineColor": "rgb(141, 213, 255)",
+    "height": 44
+  },
+  "reducedMotion": "0s",
+  "contrast": {
+    "checked": 102,
+    "minimum": 6.18,
+    "failures": []
+  },
+  "forcedColors": {
+    "outlineWidth": "3px",
+    "outlineStyle": "solid"
+  }
+}

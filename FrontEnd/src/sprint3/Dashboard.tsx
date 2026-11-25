@@ -115,7 +115,7 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
     ["Performance", indicators.performance], ["Qualidade", indicators.quality]] as const;
 
   return (
-    <div className="s3">
+    <div className="s3" data-connection={view.connection}>
       <header className="s3-top">
         <div className="s3-brand"><span aria-hidden="true">S4</span><div><strong>SMART 4.0</strong><small>Planta N2 · Bancada 4</small></div></div>
         {standalone && import.meta.env.DEV && <a href="./">Painel anterior <span aria-hidden="true">↗</span></a>}
@@ -147,6 +147,7 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
         </section>
 
         <div className="s3-grid">
+          <div className="s3-column">
           <section className="s3-card s3-magazine" aria-labelledby="s3-magazine-title">
             <header className="s3-section"><h2 id="s3-magazine-title">Magazine de expedição</h2><span>3 níveis × 4 vagas</span></header>
             {magazineStale && <p className="s3-warning">Última ocupação recebida há mais de 15 s.</p>}
@@ -169,10 +170,10 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
             {registered && !registryCurrent && <p className="s3-warning">Registro do gestor vencido.</p>}
           </section>
 
-          <section className="s3-card" aria-labelledby="s3-source-title">
+          <section className="s3-card s3-operation" aria-labelledby="s3-source-title">
             <header className="s3-section"><h2 id="s3-source-title">Dados da operação</h2></header>
             <dl className="s3-dl">
-              <div><dt>Conexão do App Shell</dt><dd>{simulated ? "Simulação local" : view.connection}</dd></div>
+              <div><dt>Conexão do App Shell</dt><dd className="s3-connection">{simulated ? "Simulação local" : view.connection}</dd></div>
               <div><dt>Telemetria de produção</dt><dd>{measurementStale ? "Último valor vencido" : measuredAt ? time.format(new Date(measuredAt)) : "Aguardando App Shell"}</dd></div>
               <div><dt>Peças processadas</dt><dd>{text(counts?.totalProduced)}</dd></div>
               <div><dt>Aprovadas / rejeitadas</dt><dd>{text(counts?.approved)} / {text(counts?.rejected)}</dd></div>
@@ -197,8 +198,10 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
               <p className="s3-caption">{bench ? stockStatus[bench.magazine.status] : "Aguardando o gestor"}</p>
             </div>}
           </section>
+          </div>
 
-          <section className="s3-card" aria-labelledby="s3-calc-title">
+          <div className="s3-column">
+          <section className="s3-card s3-calculation" aria-labelledby="s3-calc-title">
             <header className="s3-section"><h2 id="s3-calc-title">Memória de cálculo</h2></header>
             <p className="s3-formula">OEE = Disponibilidade × Performance × Qualidade</p>
             <dl className="s3-dl">
@@ -206,14 +209,14 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
               <div><dt>Tempo planejado</dt><dd>{text(counts ? times?.plannedSeconds : null, " s")}</dd></div>
               <div><dt>Tempo produtivo</dt><dd>{text(counts ? times?.operatingSeconds : null, " s")}</dd></div>
               <div><dt>Tempo parado</dt><dd>{text(indicators.downtimeSeconds, " s")}</dd></div>
-              <div><dt>Critério de aprovação</dt><dd>{criteria?.inspection ?? "Pendente com o instrutor"}</dd></div>
-              <div><dt>Fonte das premissas</dt><dd>{criteria?.reference ?? "N/D"}</dd></div>
+              <div className="s3-detail-row"><dt>Critério de aprovação</dt><dd>{criteria?.inspection ?? "Pendente com o instrutor"}</dd></div>
+              <div className="s3-detail-row"><dt>Fonte das premissas</dt><dd>{criteria?.reference ?? "N/D"}</dd></div>
             </dl>
             <p className="s3-caption">Disponibilidade = produtivo / planejado. Performance = total / (produtivo em horas × capacidade), limitada a 100%. Qualidade = aprovadas / total.</p>
             {indicators.oee === null && <p className="s3-caption">OEE em N/D até receber produção válida, tempo produtivo e premissas aprovadas.</p>}
           </section>
 
-          <section className="s3-card" aria-labelledby="s3-reset-title">
+          <section className="s3-card s3-audit" aria-labelledby="s3-reset-title">
             <header className="s3-section"><h2 id="s3-reset-title">Reset auditável</h2>
               <button type="button" disabled={!view.canReset} onClick={() => setReviewingReset(!reviewingReset)} aria-expanded={reviewingReset}>
                 {reviewingReset ? "Cancelar" : "Revisar reset"}
@@ -230,6 +233,7 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
               <li key={`${row.at}-${index}`}><strong>{row.author}</strong><span>{time.format(new Date(row.at))} · {row.totalBefore} peças antes do reset</span></li>
             ))}</ol> : <p className="s3-caption">Nenhum reset registrado neste navegador.</p>}
           </section>
+          </div>
         </div>
       </main>
     </div>

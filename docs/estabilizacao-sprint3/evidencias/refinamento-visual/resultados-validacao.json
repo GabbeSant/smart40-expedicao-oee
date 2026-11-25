@@ -1,0 +1,36 @@
+{
+  "baseCommit": "a16ea0b",
+  "synthetic": true,
+  "unitTests": {
+    "passed": 78,
+    "failed": 0
+  },
+  "integrationTests": {
+    "passed": 4,
+    "failed": 0
+  },
+  "browserTests": {
+    "startTime": "2026-11-25T17:11:17.222Z",
+    "duration": 18249.461000000003,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "lint": "PASS",
+  "frontendBuild": "PASS",
+  "releaseBuild": "PASS",
+  "releaseFiles": 36,
+  "visualChecks": {
+    "textSamples": 102,
+    "minimumMeasuredContrast": 6.18,
+    "responsiveCases": 8,
+    "overflowCases": 0,
+    "keyboardControlHeight": 44,
+    "keyboardFocus": "solid",
+    "reducedMotion": "0s",
+    "forcedColorsFocus": "solid",
+    "preludeUnchanged": true,
+    "jsxExpressionsUnchanged": true
+  }
+}
