@@ -42,7 +42,7 @@ Distribuição oficial: **todo o diretório `release/`**.
 | `/processing/index.d.ts` | Tipos da biblioteca |
 | `/flows.local.json`, `/flows.cloud.json` | Fluxos de referência Sprint 2; não importar na bancada sem adaptar o runtime |
 
-Não copie somente `sprint3-module.js`: React e lógica compartilhada são chunks separados. Não publique `FrontEnd/dist` como distribuição oficial, pois ele também contém a demonstração antiga. Não há URL remota nova nesta entrega; o domínio precisa ser confirmado antes da publicação.
+Sirva todo o diretório `release/`. O módulo depende dos chunks do Vite, e a distribuição reúne também a biblioteca e os fluxos da Sprint 2. O domínio da publicação precisa ser confirmado.
 
 ## Montagem recomendada: ESM compilado
 
@@ -155,6 +155,8 @@ window.dispatchEvent(new CustomEvent('smart40:connection.state', {
 ```
 
 Resultado após até um segundo: 8 produzidas, 7 aprovadas, 1 rejeitada, D 80%, P 100%, Q 87,5%, OEE 70%, PPM produtivo 6,7. Vaga 3 divergente; vagas 4 e 9 desconhecidas. Repetir o mesmo payload não incrementa o total. Os testes reproduzíveis estão em `integration/browser/replay.mjs` e `sprint3.spec.mjs`.
+
+O gráfico de fluxo mostra a etapa atual das peças rastreadas. Os eventos `piece.moved` atualizam identificação, armazenamento e expedição concluída. O gráfico de produção mostra aprovadas e rejeitadas por minuto quando há histórico e totais da sessão quando a fonte fornece amostras acumuladas. O diagnóstico local do Node-RED fica no standalone de desenvolvimento.
 
 Eventos v1 exigem `eventId`, `pieceId` quando aplicável, `streamId`, `seq` inteiro crescente, `timestamp`, escopo, origem e qualidade GOOD. `productionOrderId` deve ser id da API ou `null`, nunca número da OP do CLP sem resolução. A automação deve emitir `piece.processed` apenas para conclusão válida da estação 4 (`componentId: 4` no evento industrial), com inspeção explícita. O contrato normalizado confia nessa validação do agente; não recebe automaticamente qualquer `completed` global.
 

@@ -21,7 +21,7 @@ npm run preview:release
 
 Abra `http://127.0.0.1:4173/sprint3.html` ou `/`. O build oficial inclui a interface e o módulo ESM em `release/assets/sprint3-module.js`, além da biblioteca e dos fluxos da Sprint 2. O painel publicado não acessa a rede local nem abre WebSocket. No painel standalone de desenvolvimento, **Ler bancada N2** consulta o Node-RED por GET. O Vite em `--mode bancada` inicia essa consulta automaticamente. As observações permanecem na seção de dados da operação.
 
-Entregar ao Elias o [guia autossuficiente de integração](docs/estabilizacao-sprint3/03-INTEGRACAO-GRUPO1.md). A montagem usa Shadow DOM, escuta o barramento único e remove listeners e temporizadores no `unmount`. `onReset(entry)` é um callback opcional do host para alinhar a próxima janela de cálculo após reset por peça. O autor do reset é declarado, o registro fica neste navegador e não substitui auditoria autenticada do Shell.
+Para montar este painel no Shell do Elias, siga a [integração com o App Shell do Grupo 1](#integração-com-o-app-shell-do-grupo-1).
 
 Os PDFs adicionais esclareceram o barramento `smart40:telemetria`, o broker WSS do Caminho A e a API MES. A [análise dos PDFs](ANALISE-PDFS-SPRINT2.md) registra as compatibilidades, os erros encontrados e as correções. A [API MES opcional](integration/api-mes/README.md) já implementa os cinco eventos, sem alterar a biblioteca sem tela.
 
@@ -47,7 +47,16 @@ No PowerShell com scripts bloqueados, use `npm.cmd`. O teste integrado cria brok
 
 Os fluxos exportados usam `functionGlobalContext.expedition`, configurado por `integration/node-red/start.mjs`. Para importá-los em outra instalação Node-RED, é necessário instalar a biblioteca e portar esse contexto de execução.
 
-## Consumir no Grupo 1
+## Integração com o App Shell do Grupo 1
+
+1. Na raiz do repositório G5, gere a distribuição com `npm run build:release` e sirva todo o diretório `release/`. O módulo ESM e os chunks apontados por ele precisam estar acessíveis na mesma publicação.
+2. No Shell, aponte a rota `/expedicao` para `<URL-do-release>/assets/sprint3-module.js`. Encaminhe `bootstrap`, `mount({ domElement, onReset? })` e `unmount` ao módulo. Na revisão de referência do G1, a entrada local de `@smart40/expedicao-oee` tem prioridade e ainda aponta para o protótipo. O guia descreve como trocar essa entrada.
+3. Mantenha a conexão WebSocket no Shell e publique a telemetria e o estado da conexão no barramento. O painel escuta `smart40:telemetria`, `smart40:expedition:telemetry` e `smart40:connection.state`. Para preencher os gráficos, forneça eventos de peças e movimentações ou contadores de produção, conforme o contrato. O OEE também precisa dos tempos da janela, da capacidade nominal e do critério de inspeção.
+4. Valide primeiro com o replay sintético do guia, que deve mostrar **70% de OEE**. Em seguida, teste a rota no Shell com a telemetria da bancada. A montagem entre origens, o replay e o reset passaram em um host isolado. A validação com produção real continua pendente.
+
+O [guia do Grupo 1](docs/estabilizacao-sprint3/03-INTEGRACAO-GRUPO1.md) tem exemplos de montagem, payloads e critérios de aceite. O diagnóstico **Ler bancada N2** pertence ao painel standalone de desenvolvimento. No Shell, a fonte dos gráficos é o barramento.
+
+### Biblioteca de processamento da Sprint 2
 
 Importe `FrontEnd/src/processing/index.ts` no monorepo, instale `release/` como pacote local ou hospede seus arquivos ESM. A importação não abre sockets nem registra listeners.
 
