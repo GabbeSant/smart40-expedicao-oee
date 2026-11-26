@@ -41,7 +41,7 @@ $env:S3_STOCK_URL = 'http://192.168.150.200:8080'
 npm.cmd --prefix FrontEnd run dev -- --mode bancada --host 127.0.0.1 --port 8084 --strictPort
 ```
 
-Abra **http://127.0.0.1:8084/sprint3.html**, mantenha o modo real e clique **Ler bancada N2**. Essa ação executa somente GET. O horário de consulta, OP, flags e últimas posições observadas não provam produção nova nem ocupação atual de todas as vagas. N/D nesse cenário é comportamento esperado.
+Abra **http://127.0.0.1:8084/sprint3.html**. O modo bancada inicia a leitura automaticamente. No desenvolvimento padrão, clique em **Ler bancada N2**. A consulta executa somente GET. O horário de consulta, OP, flags e últimas posições observadas não provam produção nova nem ocupação atual de todas as vagas. N/D nesse cenário é comportamento esperado.
 
 Para inspeção ampliada, em outro terminal, sem configurar publicação MQTT:
 
@@ -100,7 +100,7 @@ Somente com autorização e operação a cargo do responsável:
 | Sintoma | Verificar primeiro |
 | --- | --- |
 | Porta 8084 ocupada | Encerrar o Vite antigo do próprio teste; usar `--strictPort` para não abrir a URL errada. |
-| Diagnóstico 404 | Vite deve estar em `--mode bancada`; preview/Vercel não têm essa API. |
+| Diagnóstico 404 | Use o servidor de desenvolvimento do Vite. O preview e a Vercel servem a distribuição de produção. |
 | Diagnóstico 403 | Usar `127.0.0.1` na URL e host em loopback; não acessar de origem externa. |
 | OP/posição aparecem, produção N/D | São observações retidas; faltam eventos por peça, inspeção e tempos reais. |
 | OEE N/D com peças contadas | Conferir `criterios`, `analysis.window` da mesma sessão/atualizado ou segunda amostra acumulada com tempos. |

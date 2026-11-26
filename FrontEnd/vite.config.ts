@@ -3,14 +3,14 @@ import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
 import { sprint3Bench } from './sprint3-bench.ts'
 
-export default defineConfig(({ mode }) => ({
-  plugins: [react(), mode === 'bancada' && sprint3Bench(loadEnv(mode, process.cwd(), 'S3_'))],
+export default defineConfig(({ command, isPreview, mode }) => ({
+  plugins: [react(), command === 'serve' && !isPreview && sprint3Bench(loadEnv(mode, process.cwd(), 'S3_'))],
   build: {
     manifest: true,
     rolldownOptions: {
       preserveEntrySignatures: 'strict',
       input: {
-        dashboard: fileURLToPath(new URL('./index.html', import.meta.url)),
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
         sprint3: fileURLToPath(new URL('./sprint3.html', import.meta.url)),
         sprint3Module: fileURLToPath(new URL('./src/sprint3/mfe.tsx', import.meta.url)),
       },

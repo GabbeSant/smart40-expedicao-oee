@@ -43,10 +43,31 @@ async function host(page) {
 }
 
 test('standalone de desenvolvimento: modo separado, reset e responsividade', async ({ page }) => {
-  await page.goto('http://127.0.0.1:4184/sprint3.html');
+  await page.route('**/__sprint3/observacao', route => route.fulfill({ json: {
+    observedAt: new Date().toISOString(),
+    order: 0, busy: false, waiting: false, emergency: false, finished: false, stored: 0, removed: 0,
+    magazine: { status: 'unavailable', firstFree: null, registered: null },
+  } }));
+  await page.goto('http://127.0.0.1:4184/');
+  await expect(page.getByRole('heading', { name: 'Fluxo da Expedição' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /painel anterior/i })).toHaveCount(0);
+  await expect(page.getByText('Aguardando eventos individuais de peças.')).toBeVisible();
+  await expect(page.locator('.s3-chart-track[data-missing="true"]')).toHaveCount(7);
+  await page.getByRole('button', { name: 'Ler bancada N2' }).click();
+  await expect(page.getByText('Sem OP ativa')).toBeVisible();
+  await expect(page.getByText('Gestor indisponível')).toBeVisible();
+  const signals = page.getByRole('region', { name: 'Sinais da Expedição' });
+  await expect(signals.locator('.s3-signal-timeline [data-state="inactive"]')).toHaveCount(4);
+  await expect(total(page)).toHaveText('N/D');
   await expect(kpi(page, 'OEE completo')).toHaveText('N/D');
+  await page.getByRole('button', { name: 'Parar leitura' }).click();
   await page.getByRole('button', { name: 'Simular no desenvolvimento' }).click();
   await expect(kpi(page, 'OEE completo')).toHaveText('70%');
+  const flow = page.getByRole('region', { name: 'Fluxo da Expedição' });
+  await expect(flow.locator('li strong')).toHaveText(['4', '1', '1', '1', '1']);
+  const production = page.getByRole('region', { name: 'Produção por minuto' });
+  await expect(production.locator('time').first()).toBeVisible();
+  await expect(production.getByText('1 rejeit.', { exact: true })).toHaveCount(1);
   await expect(page.locator('.s3-slot')).toHaveCount(12);
   await page.setViewportSize({ width: 360, height: 900 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

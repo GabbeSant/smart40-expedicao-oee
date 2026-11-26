@@ -37,7 +37,6 @@ body:has(> #root > .s3) { margin: 0; }
   min-height: 64px;
   border-bottom: 1px solid var(--edge);
 }
-.s3-top a { color: var(--blue); text-align: right; text-underline-offset: 4px; }
 .s3-brand { display: flex; align-items: center; gap: 12px; }
 .s3-brand > span {
   display: grid;
@@ -106,6 +105,37 @@ body:has(> #root > .s3) { margin: 0; }
 
 .s3-kpis, .s3-grid, .s3-column { display: grid; gap: 16px; }
 .s3-kpis { grid-template-columns: 1.35fr repeat(4, minmax(0, 1fr)); }
+.s3-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.s3 .s3-chart-note { margin-top: 12px; color: var(--muted); font-size: .8125rem; }
+.s3-chart-rows { list-style: none; display: grid; gap: 10px; padding: 0; margin: 0; }
+.s3-chart-row { display: grid; grid-template-columns: minmax(9.5rem, 1fr) minmax(1.5rem, 1fr) minmax(2ch, auto); align-items: center; gap: 10px; font-size: .8125rem; }
+.s3-chart-row strong { text-align: right; }
+.s3-production-row { grid-template-columns: 3rem minmax(1.5rem, 1fr) minmax(0, auto); }
+.s3-chart-track { display: flex; overflow: hidden; height: 11px; border-radius: 4px; background: var(--inset); outline: 1px solid var(--edge); }
+.s3-chart-track[data-missing="true"] { outline-style: dashed; }
+.s3-chart-flow { background: var(--blue); }
+.s3-chart-approved { background: var(--green); }
+.s3-chart-rejected { background: var(--red); }
+.s3-chart-values { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 10px; }
+.s3-chart-approved-label { color: var(--green); }
+.s3-chart-rejected-label { color: var(--red); }
+.s3-signal-chart { grid-column: 1 / -1; }
+.s3-signal-row { grid-template-columns: minmax(5rem, 8rem) minmax(0, 1fr) minmax(4.6rem, auto); }
+.s3-signal-timeline { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+.s3-signal-timeline > span, .s3-signal-legend i {
+  display: block;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--edge);
+  background: var(--inset);
+}
+.s3-signal-chart [data-state="active"] { background: var(--blue); border-color: var(--blue); }
+.s3-signal-chart [data-state="inactive"] { background: #395b76; }
+.s3-signal-chart [data-state="missing"] { border-style: dashed; }
+.s3 .s3-signal-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 14px; color: var(--muted); font-size: .75rem; }
+.s3-signal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.s3-signal-legend i { width: 14px; }
+.s3-signal-legend span:last-child { margin-inline-start: auto; }
 .s3-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; margin-top: 16px; }
 .s3-column { min-width: 0; align-content: start; }
 .s3-card {
@@ -220,11 +250,14 @@ body:has(> #root > .s3) { margin: 0; }
   .s3-kpi { padding: 16px; }
 }
 @media (max-width: 800px) {
-  .s3-grid { grid-template-columns: minmax(0, 1fr); }
+  .s3-grid, .s3-charts { grid-template-columns: minmax(0, 1fr); }
   .s3-hero { align-items: start; flex-direction: column; gap: 14px; }
   .s3-actions { justify-content: start; }
 }
 @media (max-width: 640px) {
+  .s3-signal-row { grid-template-columns: minmax(4.25rem, auto) minmax(0, 1fr) minmax(4.1rem, auto); gap: 6px; }
+  .s3-signal-timeline { gap: 2px; }
+  .s3-signal-legend span:last-child { margin-inline-start: 0; }
   .s3-kpis { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: 10px; }
   .s3-oee { display: flex; grid-column: 1 / -1; flex-wrap: wrap; align-items: center; }
   .s3-oee h2 { flex-basis: 100%; }
@@ -242,6 +275,8 @@ body:has(> #root > .s3) { margin: 0; }
   .s3-slot { transition: none; }
 }
 @media (forced-colors: active) {
+  .s3-signal-chart [data-state="active"] { background: Highlight; border-color: Highlight; forced-color-adjust: none; }
+  .s3-signal-chart [data-state="inactive"] { background: GrayText; border-color: GrayText; forced-color-adjust: none; }
   .s3-card, .s3-slot, .s3-badge, .s3-band, .s3-connection, .s3-warning { border-color: CanvasText; }
   .s3-actuator { outline: 3px solid Highlight; outline-offset: -3px; }
   .s3 :focus-visible { outline-color: Highlight; }

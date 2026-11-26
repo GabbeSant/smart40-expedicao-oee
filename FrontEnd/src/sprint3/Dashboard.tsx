@@ -8,6 +8,7 @@ import type { BenchObservation } from "./bench.ts";
 import { sprint3Demo } from "./demo.ts";
 import { reconcileSlot } from "./magazine.ts";
 import { bindSprint3Session } from "./binding.ts";
+import { ProcessCharts } from "./ProcessCharts.tsx";
 
 const liveSession = createSprint3Session("medido");
 const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
@@ -30,11 +31,13 @@ function showAudit(key: string) {
 }
 
 export function Dashboard({ standalone = false, onReset }: { standalone?: boolean; onReset?: (entry: ResetEntry) => void }) {
+  const benchEnabled = import.meta.env.DEV && standalone;
   const [session, setSession] = useState(() => liveSession);
   const [simulated, setSimulated] = useState(false);
   const [current, setCurrent] = useState(() => ({ view: liveSession.view(), now: Date.now() }));
-  const [reading, setReading] = useState(false);
-  const [bench, setBench] = useState<BenchObservation | null>(null);
+  const [reading, setReading] = useState(() => benchEnabled && import.meta.env.MODE === "bancada");
+  const [benchHistory, setBenchHistory] = useState<BenchObservation[]>([]);
+  const bench = benchHistory.at(-1);
   const [benchError, setBenchError] = useState<string | null>(null);
   const [reviewingReset, setReviewingReset] = useState(false);
   const [notice, setNotice] = useState("");
@@ -52,7 +55,7 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
   }, [session, simulated]);
 
   useEffect(() => {
-    if (!import.meta.env.DEV || !reading) return;
+    if (!benchEnabled || !reading || simulated) return;
     const abort = new AbortController();
     let timer: number | undefined;
     async function refresh() {
@@ -60,22 +63,25 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
         const response = await fetch("/__sprint3/observacao", { signal: abort.signal, headers: { Accept: "application/json" } });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const observation = readBenchObservation(await response.json());
-        if (!abort.signal.aborted) { setBench(observation); setBenchError(null); }
+        if (!abort.signal.aborted) {
+          setBenchHistory(previous => [...previous.slice(-11), observation]);
+          setBenchError(null);
+        }
       } catch {
-        if (!abort.signal.aborted) setBenchError("Leitura indisponível. Confira a rede Smart 4.0 e o Vite no modo bancada.");
+        if (!abort.signal.aborted) setBenchError("Falha na consulta local. Confira se o servidor de desenvolvimento está rodando.");
       } finally {
         if (!abort.signal.aborted) timer = window.setTimeout(refresh, 4000);
       }
     }
     void refresh();
     return () => { abort.abort(); window.clearTimeout(timer); };
-  }, [reading]);
+  }, [benchEnabled, reading, simulated]);
 
   function switchSource() {
     const target = !simulated;
     const next = target ? sprint3Demo() : liveSession;
-    setReading(false);
-    setBench(null);
+    setBenchHistory([]);
+    setBenchError(null);
     setSimulated(target);
     setSession(next);
     setCurrent({ view: next.view(), now: Date.now() });
@@ -103,6 +109,8 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
   const free = slots.filter(slot => slot === false).length;
   const occupied = slots.filter(slot => slot === true).length;
   const benchAge = bench ? now - Date.parse(bench.observedAt) : 0;
+  const benchHasReadings = bench && [bench.order, bench.busy, bench.waiting, bench.emergency, bench.finished,
+    bench.stored, bench.removed].some(value => value !== null);
   const measuredAt = cumulative?.observedAt ?? snapshot?.lastUpdated;
   const measurementStale = !simulated && measuredAt != null && now - Date.parse(measuredAt) > 15_000;
   const disconnected = !simulated && ["DISCONNECTED", "CONNECTING", "STALE"].includes(view.connection);
@@ -118,7 +126,6 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
     <div className="s3" data-connection={view.connection}>
       <header className="s3-top">
         <div className="s3-brand"><span aria-hidden="true">S4</span><div><strong>SMART 4.0</strong><small>Planta N2 · Bancada 4</small></div></div>
-        {standalone && import.meta.env.DEV && <a href="./">Painel anterior <span aria-hidden="true">↗</span></a>}
       </header>
       <main className="s3-main">
         <header className="s3-hero">
@@ -126,12 +133,14 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
           <div className="s3-actions">
             <span className={`s3-badge ${simulated ? "s3-demo" : ""}`}>{simulated ? "Simulação · desenvolvimento" : "Modo real · somente leitura"}</span>
             {import.meta.env.DEV && <button type="button" onClick={switchSource} aria-pressed={simulated}>{simulated ? "Voltar ao modo real" : "Simular no desenvolvimento"}</button>}
-            {import.meta.env.DEV && import.meta.env.MODE === "bancada" && !simulated && <button type="button" aria-pressed={reading}
-              onClick={() => { setBench(null); setBenchError(null); setReading(!reading); }}>{reading ? "Parar leitura" : "Ler bancada N2"}</button>}
+            {benchEnabled && !simulated && <button type="button" aria-pressed={reading}
+              onClick={() => { setBenchHistory([]); setBenchError(null); setReading(!reading); }}>{reading ? "Parar leitura" : "Ler bancada N2"}</button>}
           </div>
         </header>
 
         {disconnected && <p className="s3-warning" role="status">{view.connection === "DISCONNECTED" ? "App Shell desconectado" : view.connection === "CONNECTING" ? "App Shell reconectando" : "Telemetria vencida"}. Últimos valores preservados; aguarde dados atuais.</p>}
+
+        <ProcessCharts snapshot={snapshot} counts={counts} observations={benchHistory} showBench={benchEnabled && reading && !simulated} />
 
         <section className="s3-kpis" aria-label="Indicadores de produção">
           {metrics.map(([label, value], index) => (
@@ -182,17 +191,19 @@ export function Dashboard({ standalone = false, onReset }: { standalone?: boolea
             </dl>
             {cumulative?.state === "baseline" && <p className="s3-caption">Referência recebida. Aguardando a próxima amostra para calcular deltas.</p>}
             {cumulative?.state === "epoch-change" && <p className="s3-warning">A fonte reiniciou os contadores. Revise o reset local para aceitar a nova referência.</p>}
-            {import.meta.env.DEV && import.meta.env.MODE === "bancada" && reading && !simulated && <div className="s3-bench" aria-label="Observações reais da bancada">
+            {benchEnabled && reading && !simulated && <div className="s3-bench" aria-label="Observações reais da bancada">
               <h3>Observação do Node-RED</h3>
               {benchError && <p className="s3-warning" role="status">{benchError}</p>}
+              {bench && !benchHasReadings && <p className="s3-warning" role="status">Node-RED sem leituras da Expedição. Confira a conexão com a rede Smart 4.0.</p>}
               {benchAge > 15_000 && <p className="s3-warning">Última consulta vencida.</p>}
               <dl className="s3-dl">
                 <div><dt>Consulta local · sem timestamp do CLP</dt><dd>{bench ? time.format(new Date(bench.observedAt)) : "Aguardando"}</dd></div>
-                <div><dt>OP lida</dt><dd>{bench?.order ? `OP${bench.order}` : "N/D"}</dd></div>
+                <div><dt>OP lida</dt><dd>{bench?.order === 0 ? "Sem OP ativa" : bench?.order ? `OP${bench.order}` : "N/D"}</dd></div>
                 <div><dt>Última posição de armazenamento</dt><dd>{text(bench?.stored)}</dd></div>
                 <div><dt>Última posição de remoção</dt><dd>{text(bench?.removed)}</dd></div>
                 <div><dt>Ocupado / aguardando</dt><dd>{flag(bench?.busy)} / {flag(bench?.waiting)}</dd></div>
                 <div><dt>Emergência ativa</dt><dd>{flag(bench?.emergency)}</dd></div>
+                <div><dt>Fim de OP</dt><dd>{flag(bench?.finished)}</dd></div>
                 <div><dt>Primeira vaga livre · gestor</dt><dd>{text(bench?.magazine.firstFree)}</dd></div>
               </dl>
               <p className="s3-caption">{bench ? stockStatus[bench.magazine.status] : "Aguardando o gestor"}</p>

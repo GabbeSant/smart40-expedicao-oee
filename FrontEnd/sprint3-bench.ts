@@ -5,7 +5,8 @@ import { readRegisteredBlocks, slotNumber } from "./src/sprint3/magazine.ts";
 
 const tagFields = {
   order: "NumeroOP_expedicao", busy: "Ocupado_expedicao", waiting: "Aguardando_expedicao",
-  emergency: "EmergenciaAtivada_expedicao", stored: "posicaoGuardado_expedicao", removed: "posicaoRemovidoExpedicao",
+  emergency: "EmergenciaAtivada_expedicao", finished: "FinishOP_expedicao",
+  stored: "posicaoGuardado_expedicao", removed: "posicaoRemovidoExpedicao",
 };
 const loopback = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 

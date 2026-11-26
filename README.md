@@ -2,7 +2,7 @@
 
 **Bancada em 25/11, às 18h45:** começar pelo [roteiro de validação](docs/estabilizacao-sprint3/04-ROTEIRO-BANCADA-25-11.md). O [relatório de estabilização](docs/estabilizacao-sprint3/01-RELATORIO-IMPLEMENTACAO.md) e os [resultados dos testes](docs/estabilizacao-sprint3/05-RESULTADOS-DOS-TESTES.md) descrevem a revisão atual.
 
-A entrega reúne a biblioteca TypeScript da **Sprint 2**, sem tela própria, e o painel de expedição e OEE da **Sprint 3**. A biblioteca continua validando e deduplicando eventos. O painel exibe OEE completo, PPM, magazine 3 × 4, comparação com o gestor e reset auditável. A demonstração React anterior permanece disponível no desenvolvimento.
+A entrega reúne a biblioteca TypeScript da **Sprint 2** e o painel de expedição e OEE da **Sprint 3**. A biblioteca valida e deduplica eventos. O painel exibe OEE completo, PPM, fluxo de peças por etapa, produção aprovada e rejeitada, magazine 3 × 4, comparação com o gestor e reset auditável.
 
 Para a Sprint 3, a referência principal é `Frontend DOCS/Sprint3_Grupo5.pdf`, especialmente pp. 5–9. O [guia da Sprint 3](FrontEnd/docs/SPRINT3-EXPEDICAO.md) registra fórmulas e contrato proposto. As orientações históricas de entrega sem tela se referem à Sprint 2.
 
@@ -12,14 +12,14 @@ Para a Sprint 3, a referência principal é `Frontend DOCS/Sprint3_Grupo5.pdf`, 
 npm --prefix FrontEnd run dev -- --host 127.0.0.1 --port 8084 --strictPort
 ```
 
-Abra `http://127.0.0.1:8084/sprint3.html`. A chave de simulação aparece somente no desenvolvimento; seus valores são fictícios. No modo real, o painel aguarda eventos do App Shell e mantém N/D sem dados suficientes. Capacidade nominal, critério de qualidade e fonte são fornecidos por `estacoes.expedicao.criterios`, sem valores industriais padrão. A produção recusa origem simulada.
+Abra `http://127.0.0.1:8084/` ou `/sprint3.html`. A chave de simulação aparece somente no desenvolvimento. No modo real, o painel aguarda eventos do App Shell e mantém N/D sem dados suficientes. Capacidade nominal, critério de qualidade e fonte são fornecidos por `estacoes.expedicao.criterios`, sem valores industriais padrão. A produção recusa origem simulada.
 
 ```sh
 npm run build:release
 npm run preview:release
 ```
 
-Abra `http://127.0.0.1:4173/sprint3.html` ou `/`. O build oficial inclui a interface e o módulo ESM em `release/assets/sprint3-module.js`, além da biblioteca e dos fluxos da Sprint 2. O painel publicado não acessa a rede local nem abre WebSocket. O diagnóstico GET de bancada existe apenas no Vite em `--mode bancada`; suas observações não contam peças.
+Abra `http://127.0.0.1:4173/sprint3.html` ou `/`. O build oficial inclui a interface e o módulo ESM em `release/assets/sprint3-module.js`, além da biblioteca e dos fluxos da Sprint 2. O painel publicado não acessa a rede local nem abre WebSocket. No painel standalone de desenvolvimento, **Ler bancada N2** consulta o Node-RED por GET. O Vite em `--mode bancada` inicia essa consulta automaticamente. As observações permanecem na seção de dados da operação.
 
 Entregar ao Elias o [guia autossuficiente de integração](docs/estabilizacao-sprint3/03-INTEGRACAO-GRUPO1.md). A montagem usa Shadow DOM, escuta o barramento único e remove listeners e temporizadores no `unmount`. `onReset(entry)` é um callback opcional do host para alinhar a próxima janela de cálculo após reset por peça. O autor do reset é declarado, o registro fica neste navegador e não substitui auditoria autenticada do Shell.
 

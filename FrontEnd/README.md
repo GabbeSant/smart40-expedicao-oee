@@ -4,9 +4,9 @@
 
 FrontEnd do **Grupo 5**, em React, TypeScript e Vite. O painel atual recebe a telemetria pelo barramento do App Shell, sem conexão WebSocket própria. Sem produção, tempos e premissas aprovadas, os indicadores ficam em N/D.
 
-O painel anterior em `/` no Vite é uma demonstração inteiramente simulada: indicadores, ordens, lotes e saídas são fictícios. Seus recursos continuam disponíveis no desenvolvimento. A distribuição `release/` publica a Sprint 3 em `/` e `/sprint3.html` e exclui essa demonstração anterior. Nenhum painel envia comandos à planta.
+As rotas `/` e `/sprint3.html` abrem o painel da Sprint 3 em desenvolvimento e na distribuição `release/`. Os gráficos mostram a etapa atual das peças rastreadas e a produção aprovada e rejeitada. Com contadores acumulados, o gráfico mostra os totais da sessão.
 
-A camada isolada em `src/integration` prepara a leitura de ordens da Planta N2 por GET, com adapter parcial e fallback mock identificado. Seu consumo é explícito; a interface continua usando a simulação. Veja [a análise, os mapeamentos e o uso da integração](docs/integracao-production-orders.md).
+A camada isolada em `src/integration` prepara a leitura de ordens da Planta N2 por GET, com adapter parcial e fallback mock identificado. Veja [a análise, os mapeamentos e o uso da integração](docs/integracao-production-orders.md).
 
 ## Rodar
 
@@ -29,7 +29,7 @@ OEE usa disponibilidade × performance × qualidade, com performance limitada a 
 
 Para conferir a distribuição publicada, execute na raiz `npm run build:release` e `npm run preview:release`. Para testar o navegador, execute na raiz `npx playwright install chromium` e `npm run test:browser`. As fixtures são sintéticas e ficam em `../integration/browser/`; não comprovam produção física. O módulo visual conserva o estado na navegação SPA, mas precisa de replay do host para eventos emitidos enquanto desmontado. Um recarregamento completo inicia uma nova sessão em memória; o histórico de reset continua no armazenamento local.
 
-### Demonstração anterior · somente desenvolvimento
+### Recursos históricos do protótipo
 
 - Sete cenários, incluindo **Novo planejamento** para cadastrar as próprias OPs e começar do zero.
 - Cadastro de OP com produto, quantidade e destino; códigos duplicados são rejeitados.
@@ -45,7 +45,7 @@ Para conferir a distribuição publicada, execute na raiz `npm run build:release
 - CSV dos indicadores, premissas, OPs/destinos, posições, movimentações e saídas; PDF via impressão do navegador.
 - Layout responsivo, navegação por teclado, modal com foco contido e estados vazios.
 
-Para salvar PDF, clique em **Salvar PDF** e selecione **Salvar como PDF** no diálogo de impressão. CSV e PDF identificam a origem simulada dos dados.
+Os arquivos do protótipo ficam no repositório como referência e para os testes do domínio.
 
 ## Verificar
 

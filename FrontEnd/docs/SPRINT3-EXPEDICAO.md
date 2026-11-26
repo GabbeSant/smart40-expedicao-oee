@@ -8,7 +8,7 @@ Referência de requisitos: `Frontend DOCS/Sprint3_Grupo5.pdf`, páginas 1–10. 
 npm.cmd --prefix FrontEnd run dev -- --mode bancada --host 127.0.0.1 --port 8084 --strictPort
 ```
 
-Abra `http://127.0.0.1:8084/sprint3.html` e clique em **Ler bancada N2**. A consulta GET ao contexto do Node-RED exibe os estados, a OP e as últimas posições registradas. O horário é o da consulta. O contexto pode reter valores e nenhum deles, isoladamente, confirma uma peça produzida ou a situação atual das outras vagas.
+Abra `http://127.0.0.1:8084/sprint3.html`. Em modo bancada, a consulta começa automaticamente. No desenvolvimento padrão, use **Ler bancada N2**. A consulta GET ao contexto do Node-RED exibe os estados, a OP e as últimas posições registradas. O horário é o da consulta. O contexto pode reter valores e nenhum deles, isoladamente, confirma uma peça produzida ou a situação atual das outras vagas.
 
 O servidor de desenvolvimento consulta por GET `/api/blocks/2` e `/api/blocks` em intervalos de pelo menos 30 segundos enquanto houver consultas. Os URLs configuráveis são `S3_NODE_RED_URL` e `S3_STOCK_URL`. Se o responsável fornecer credenciais do gestor, configure `S3_STOCK_USER` e `S3_STOCK_PASSWORD` apenas no ambiente do Vite. As credenciais ficam no servidor. Use o ambiente isolado autorizado se o gestor só oferecer HTTP.
 

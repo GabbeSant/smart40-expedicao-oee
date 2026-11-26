@@ -7,9 +7,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, 'release');
 const frontend = path.join(root, 'FrontEnd/dist');
 // A lista do Vite permite publicar somente a Sprint 3 e seus chunks compartilhados.
-// A demonstração simulada anterior continua disponível no desenvolvimento.
 const viteManifest = JSON.parse(fs.readFileSync(path.join(frontend, '.vite/manifest.json'), 'utf8'));
-const assets = new Set(['sprint3.html', 'favicon.svg']);
+const pages = ['index.html', 'sprint3.html'];
+const assets = new Set([...pages, 'favicon.svg']);
+const chunksByFile = new Map(Object.entries(viteManifest).map(([key, chunk]) => [chunk.file, key]));
 function include(key) {
   const chunk = viteManifest[key];
   if (!chunk) throw new Error(`Entrada do Vite ausente: ${key}`);
@@ -18,10 +19,17 @@ function include(key) {
   for (const file of [...(chunk.css ?? []), ...(chunk.assets ?? [])]) assets.add(file);
   for (const dependency of [...(chunk.imports ?? []), ...(chunk.dynamicImports ?? [])]) include(dependency);
 }
-include('sprint3.html');
+for (const page of pages) {
+  const html = fs.readFileSync(path.join(frontend, page), 'utf8');
+  for (const [, file] of html.matchAll(/(?:src|href)="\/(assets\/[\w.-]+)"/g)) {
+    const key = chunksByFile.get(file);
+    if (key) include(key);
+    else assets.add(file);
+  }
+}
 include('src/sprint3/mfe.tsx');
 for (const file of assets) {
-  if (!/^(?:assets\/[\w.-]+|sprint3\.html|favicon\.svg)$/.test(file) || !fs.statSync(path.join(frontend, file)).isFile())
+  if (!/^(?:assets\/[\w.-]+|index\.html|sprint3\.html|favicon\.svg)$/.test(file) || !fs.statSync(path.join(frontend, file)).isFile())
     throw new Error(`Artefato não permitido ou ausente: ${file}`);
 }
 if (!fs.existsSync(path.join(root, 'FrontEnd/dist-processing/processing/index.js'))) throw new Error('Compile a biblioteca antes de empacotar.');
@@ -34,7 +42,6 @@ for (const file of assets) {
   fs.mkdirSync(path.dirname(path.join(output, file)), { recursive: true });
   fs.copyFileSync(path.join(frontend, file), path.join(output, file));
 }
-fs.copyFileSync(path.join(output, 'sprint3.html'), path.join(output, 'index.html'));
 fs.writeFileSync(path.join(output, 'package.json'), JSON.stringify({
   name: '@smart40/expedition-processing', version: '1.0.0', type: 'module',
   exports: { '.': { types: './processing/index.d.ts', import: './processing/index.js' } },

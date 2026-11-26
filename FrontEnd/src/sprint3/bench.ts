@@ -8,6 +8,7 @@ export interface BenchObservation {
   busy: boolean | null;
   waiting: boolean | null;
   emergency: boolean | null;
+  finished: boolean | null;
   stored: number | null;
   removed: number | null;
   magazine: {
@@ -25,6 +26,7 @@ export function readBenchObservation(value: unknown): BenchObservation {
     busy: typeof value.busy === "boolean" ? value.busy : null,
     waiting: typeof value.waiting === "boolean" ? value.waiting : null,
     emergency: typeof value.emergency === "boolean" ? value.emergency : null,
+    finished: typeof value.finished === "boolean" ? value.finished : null,
     stored: slotNumber(value.stored) ? value.stored : null, removed: slotNumber(value.removed) ? value.removed : null,
     magazine: { status, firstFree: status === "available" && slotNumber(firstFree) ? firstFree : null,
       registered: status === "available" ? readRegisteredMagazine(value.magazine.registered) : null } };
